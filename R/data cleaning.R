@@ -187,6 +187,7 @@ gdsExp$muscle <- gdsExp$muscle[,as.character(gdsDt$muscle$sample[gdsDt$muscle$pr
 # $skeletal_ms$age
 # 18 m 30 m  6 m 
 #    8    8    8 
+
 # $extraoc_ms$tissue
 # extensor digitorum longus        extraocular muscle 
 #                        12                        12  
@@ -203,10 +204,12 @@ gdsExp$muscle <- gdsExp$muscle[,as.character(gdsDt$muscle$sample[gdsDt$muscle$pr
 # 14 months 24 months  4 months 
 #        10        10         9 
 
-
-
-
-
+# constrouct sample ages
+ages <- vector("list", length(geodsets))
+names(ages) <- names(geodsets)
+ages[19:26] <- lapply(gdsData[19:26], function (x) as.numeric(word(as.character(dataTable(x)@columns$age, 1))))
+ages$r_heart <- c(rep(3.5, 5), rep(21, 6))
+for(x in seq_along(ages[19:26])) names(ages[19:26][[x]]) <- as.character(dataTable(gdsData[19:26][[x]])@columns$sample)
 
 
 
