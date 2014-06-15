@@ -7,12 +7,16 @@ gendr_manipulations <- read.csv("C:/Users/user/Desktop/biomind/artificial biolog
 longevity <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/sendat/longevity.csv", stringsAsFactors = FALSE)
 anage_data <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/sendat/anage_data.txt", stringsAsFactors = FALSE)
 
+# rm(genage_human, genage_models, gendr_manipulations, longevity, anage_data)
+
 ### tcm data base http://www.megabionet.org/tcmid/download/
 compound_protein <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/tcmid/compound_protein.csv", header = FALSE, stringsAsFactors = FALSE)
 names(compound_protein) <- c("compound", "uniprot", "source")
 compounds <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/tcmid/compounds.csv", stringsAsFactors = FALSE)
 herb <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/tcmid/herb.csv", stringsAsFactors = FALSE)
 prescription <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/tcmid/prescription.csv", stringsAsFactors = FALSE)
+
+# rm(compounds, herb, prescription, compound_protein)
 
 ### set up postgresql db for comparative tox db http://ctdbase.org/
 library("RPostgreSQL")
@@ -41,7 +45,7 @@ chemicals_diseases <- read.clump("C:/Users/user/Desktop/biomind/artificial biolo
 names(chemicals_diseases) <- c("ChemicalName", "ChemicalID", "CasRN", "DiseaseName", "DiseaseID", "DirectEvidence", "InferenceGeneSymbol", "InferenceScore", "OmimIDs", "PubMedIDs")
 dbWriteTable(con, "chemicals_diseases", chemicals_diseases)
 
-
+# rm(chemicals, diseases, genes, pathways, genes_pathways, diseases_pathways, chemicals_diseases)
 
 ##### functions
 
