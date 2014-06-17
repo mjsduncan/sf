@@ -271,35 +271,8 @@ ages$extraoc_ms <- ages$extraoc_ms[13:24]
 #        10        10         9 
 
 
-##############################
-#   construct moses dataset
 
-# get probe x sample log2 normalized expression level matrix from expression set
-hlavtx.moses <- exprs(hlavtx)
 
-#median normalize with med.normalize() from "data cleaning.R"
-hlavtx.moses <- med.normalize(hlavtx.moses)
-
-# add control binary (cases are transplants resulting in primary graft disfunction)
-controls <- c(0,1,1,1,1,1,1,1,1,0,0,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1)
-hlavtx.moses <- t(rbind(controls, hlavtx.moses))
-
-# remove control spots
-gpl96.controls <- as.character(fData(hlavtx)$ID[fData(hlavtx)$Platform_SPOTID == "--Control"])
-hlavtx.moses <- hlavtx.moses[,!(colnames(hlavtx.moses) %in% gpl96.controls)]
-
-# export file
-write.csv(hlavtx.moses, file = "results/transplant_samples/hlavtx_moses.csv")
-# apply median norm to df columns
-med.normalize <- function(mat) {
-  out <- mat
-  for (i in seq(dim(mat)[2])) { 
-    vect <- mat[,i]
-    med <- median(vect, na.rm = TRUE)
-    out[,i] <- as.numeric(vect >= med)
-  }
-  return(out)
-}
 
 ### functions
 
