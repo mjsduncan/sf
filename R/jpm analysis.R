@@ -35,17 +35,30 @@ jpmExp <- mapply(matrix.slope, ages, jpmExp)
 jpmExp.out <- mapply(matrix.slope, ages[1:18], jpmExp[1:18])
 jpmExp.out$stromal <- "NULL"
 
-jpmExp.out2 <- vector("list", 7)
-names(jpmExp.out2) <- names(jpmExp)[20:26]
-for(i in 1:7) {
-  try(jpmExp.out2[[i]] <- matrix.slope(ages[[19 + i]], jpmExp[[19 + i]]))
+jpmExp.out <- vector("list", 26)
+names(jpmExp.out2) <- names(jpmExp)
+for(i in 1:26) {
+  try(jpmExp.out[[i]] <- matrix.slope(ages[[i]], jpmExp[[i]]))
 }
+
+jpmExp.pofb <- c(jpmExp.out, jpmExp.out2)
+
+save(list = c("jpmExp", "jpmExp.f", "jpmExp.pb"), file = "jpmData.rdata")
 
 #get f statistics and p values
 jpmExp.f <- vector("list", 26)
 names(jpmExp.f) <- names(jpmExp)
 for(i in 1:26) {
   try(jpmExp.f[[i]] <- matrix.poff(ages[[i]], jpmExp[[i]]))
+}
+
+# fix matrix column names
+for(i in 1:26) {
+  if(!is.null(jpmExp.f[[i]])) {
+    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 3)] <- "F"
+    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 2)] <- "df1"
+    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]))] <- "df2"
+  }
 }
 
 jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3]))))
@@ -55,6 +68,49 @@ jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.
 # [1] 0.04272213
 
 # TODO use code from lm.fit and summary.lm to make efficient probe/row based model fitting
+
+# pick out genes with significant linear realtionship to age
+jpmExp.b1p <- lapply(jpmExp.pb, function(x) if(!is.na(x)) x[, last.ind(colnames(x), 2):last.ind(colnames(x))])
+jpmExp.slope <- mapply(cbind, jpmExp.b1p, jpmExp.fp)
+for(i in 1:26) if(is.numeric(jpmExp.slope[[i]])) colnames(jpmExp.slope[[i]]) <- c("b1", "p of b1", "p of F")
+
+# why don't F test signifcant probes have significant slopes? 
+# $skeletal_ms
+# age                    NA           NA        NA
+# A01157cds_s_at 0.01849251  -0.06845535 0.9815075
+#
+# $m_heart                                         
+# age              NA        NA         NA
+# 100001_at 0.9712485  2.507187 0.02875146
+#
+# they are significant for 2 tailed tests!
+
+jpmSig <- lapply(jpmExp.slope, function(x) if(is.numeric(x)) x[x[, 3] <= .025 | x[, 3] >= .975,])
+
+# add original annotation
+jpmSig <- lapply(jpmSig, function(x) x[-1,])
+for(i in 1:26) {
+  if(!is.null(jpmSig[[i]])) {
+    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]][match(rownames(jpmSig[[i]]), probe2gene[[i]][, 1]), 2], 
+      as.data.frame(jpmSig[[i]]), stringsAsFactors = FALSE)
+  }
+}
+
+# add homologue mapping
+# add current annotation
+
+# split into positively  and negatively correlated
+jpmPos <- vector("list", 26)
+names(jpmPos) <- names(jpmSig)
+jpmNeg <- vector("list", 26)
+names(jpmNeg) <- names(jpmSig)
+for(n in names(jpmSig)) {
+  if(!is.null(jpmSig[[n]]))  {
+    jpmPos[[n]] <- jpmSig[[n]][jpmSig[[n]][, 2] > 0,]
+    jpmNeg[[n]] <- jpmSig[[n]][jpmSig[[n]][, 2] < 0,]
+  }
+}
+
 
 ### functions
 
@@ -80,6 +136,7 @@ row.slope <- function (y, x) {
   summary(lm(y ~ x))$coefficients[2, c(1,4)]
 }
 
+# column naming doesn't work
 matrix.slope <- function(y, x) {
   out <- t(apply(x, 1, function(r) row.slope(y, r)))
   out <- `colnames<-`(cbind(x, out), c(colnames(x), c("slope", "p")))
@@ -91,16 +148,18 @@ row.poff <- function (y, x) {
   summary(lm(y ~ x))$fstatistic
 }
 
+# column naming doesn't work
 matrix.poff <- function(y, x) {
   out <- t(apply(x, 1, function(r) row.poff(y, r)))
-  out <- `colnames<-`(cbind(x, out), c(colnames(x), c("F", "df1", "df2")))
-  `rownames<-`(rbind(c(y, NA, NA, NA), out), c("age", rownames(out)))
+  out <- cbind(x, out)
+  out <- rbind(c(y, NA, NA, NA), out)
+  colnames(out) <- , c("age", rownames(out))
 }
   
 # fix failure to name columns in matrix.poff
 
 last.row <- function (vec, n = 1) vec[(length(vec) - n + 1):length(vec)]
-
+last.ind <- function (vec, n = 1) length(vec) - n + 1
 # apply median norm to df columns
 med.normalize <- function(mat) {
   out <- mat

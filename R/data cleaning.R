@@ -45,6 +45,12 @@ con <- dbConnect(SQLite(),'C:/Users/user/Documents/GEOmetadb.sqlite')
 arrays <- merge(gpls, getBiocPlatformMap(con, bioc='all'), by.x = "to_acc", by.y = "gpl", all.x = TRUE)
 dbDisconnect(con)
 # file.remove('C:/Users/user/Documents/GEOmetadb.sqlite')
+arrays <- rbind(arrays, arrays[8,], arrays[17,])
+row.names(arrays)[25:26] <- c("oculomotor", "extraoc_ms")
+row.names(arrays)[1:24] <- names(geodsets)[match(arrays[1:24,]$from_acc, geodsets)]
+arrays$bioc_package <- paste(arrays$bioc_package, ".db", sep = "")
+
+# install miacroarray annotation packages
 BiocInstaller::biocLite(paste(unique(arrays[["bioc_package"]]), "db", sep = "."))
 
 # dowlnoad geo datasets into list of GEOData objects
@@ -213,7 +219,6 @@ names(ages$r_hippo) <- as.character(dataTable(gdsData$r_hippo)@columns$sample)
 # 21 days post-training       5 days training             untrained 
 #                    28                    30                    20 
 
-
 # construct remaining rat sample ages
 ages[19:26] <- lapply(gdsData[19:26], function (x) as.numeric(word(as.character(dataTable(x)@columns$age, 1))))
 ages$r_heart <- c(rep(3.5, 5), rep(21, 6))
@@ -270,9 +275,14 @@ ages$extraoc_ms <- ages$extraoc_ms[13:24]
 # 14 months 24 months  4 months 
 #        10        10         9 
 
+# extract probe and gene names
+probe2gene <- vector("list", length(geodsets))
+names(probe2gene) <- names(geodsets)
+for(i in 1:length(geodsets)) {probe2gene[[i]] <- dataTable(gdsData[[i]])@table[, 1:2]}
+# probe2gene <- lapply(probe2gene, function(x) lapply(x, as.character))
+probe2gene <- lapply(probe2gene, function(x) data.frame(probe = x[[1]], gene = x[[2]], stringsAsFactors = FALSE))
 
-
-
+save(gdsData, gdsDt, gdsExp, probe2gene, file = "gdsData.rdata")
 
 ### functions
 
@@ -283,5 +293,4 @@ GEOfix <- function(df) {
  as.matrix(out[, -1])
 }
 
-# 
 
