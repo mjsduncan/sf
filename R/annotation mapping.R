@@ -1,3 +1,6 @@
+### get current human homologues for mouse & rat expression data sets
+# uses jpmPos, jpmNeg from 'jpm analysis.R'
+
 # load databases
 library("org.Hs.eg.db")
 library("org.Mm.eg.db")
@@ -76,21 +79,36 @@ jpmNeg.df <- mapply(merge, jpmNegUni[7:26][!sapply(jpmNegUni[7:26], is.null)], j
 
 jpmPos.df <- lapply(jpmPos.df, function(x) x[!is.na(x[, 4]),])
 jpmNeg.df <- lapply(jpmNeg.df, function(x) x[!is.na(x[, 4]),])
-jpmPos.df <- lapply(jpmPos.df, function(x) x[,4])
-jpmNeg.df <- lapply(jpmNeg.df, function(x) x[!is.na(x[, 4]),])
 
 # make list of symbols of homologues
 jpmPos.sym <- vector("list", length(jpmPos.df))
 names(jpmPos.sym) <- names(jpmPos.df)
-jpmNeg.sym <- vector("list", length(jpmNeg.df))
-names(jpmNeg.sym) <- names(jpmNeg.df)
 for(n in names(jpmPos.df)) {
   jpmPos.sym[[n]] <- intraIDMapper(as.character(jpmPos.df[[n]]$homo), "HOMSA", destIDType = "SYMBOL", keepMultGeneMatches = TRUE)
 }
 jpmPos.sym <- lapply(jpmPos.sym, unlist)
+jpmPos.sym <- lapply(jpmPos.sym, function(x) data.frame(homo = names(x), homSym = x, stringsAsFactors = FALSE))
+
+jpmNeg.sym <- vector("list", length(jpmNeg.df))
+names(jpmNeg.sym) <- names(jpmNeg.df)
 for(n in names(jpmNeg.df)) {
   jpmNeg.sym[[n]] <- intraIDMapper(as.character(jpmNeg.df[[n]]$homo), "HOMSA", destIDType = "SYMBOL", keepMultGeneMatches = TRUE)
 }
 jpmNeg.sym <- lapply(jpmNeg.sym, unlist)  
+jpmNeg.sym <- lapply(jpmNeg.sym, function(x) data.frame(homo = names(x), homSym = x, stringsAsFactors = FALSE))
 
-# TODO merge jpmXxx.df & jpmXxx.sym and get final map from probes to human homologue symbol
+# merge jpmXxx.df & jpmXxx.sym and get final map from probes to human homologue symbol
+jpmPos.df <- mapply(merge, jpmPos.df, jpmPos.sym, MoreArgs = list(all = TRUE, stringsAsFactors = FALSE), SIMPLIFY = FALSE)
+jpmNeg.df <- mapply(merge, jpmNeg.df, jpmNeg.sym, MoreArgs = list(all = TRUE, stringsAsFactors = FALSE), SIMPLIFY = FALSE)
+jpmPos.df <- lapply(jpmPos.df, function(x) x[!is.na(x[, 5]),])
+jpmNeg.df <- lapply(jpmNeg.df, function(x) x[!is.na(x[, 5]),])
+
+# gained 5% over just capitalizing mouse & rat gene symbols
+summary(unlist(lapply(jpmPos.df, function(x) sum(toupper(x[, 4]) == x[, 5])/dim(x)[1])))
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  0.9008  0.9463  0.9565  0.9557  0.9729  1.0000 
+summary(unlist(lapply(jpmNeg.df, function(x) sum(toupper(x[, 4]) == x[, 5])/dim(x)[1])))
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  0.6667  0.9342  0.9514  0.9373  0.9651  1.0000 
+
+# 

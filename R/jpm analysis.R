@@ -1,6 +1,6 @@
 ##### recreate jpm paper analysis & compare with moses results
-
-### jpm analysis recreation
+# uses gdsExp from 'data cleaning.R'
+### jpm individual data set analysis recreation: linear model of individual gene expression with age
 
 jpmExp <- lapply(gdsExp, impute.matrix)
 
@@ -31,19 +31,12 @@ jpmExp <- lapply(jpmExp, log2)
 # compute slopes and p values
 jpmExp <- mapply(matrix.slope, ages, jpmExp)
 
-#stromal doesn't work
-jpmExp.out <- mapply(matrix.slope, ages[1:18], jpmExp[1:18])
-jpmExp.out$stromal <- "NULL"
-
-jpmExp.out <- vector("list", 26)
-names(jpmExp.out2) <- names(jpmExp)
+#stromal & spinal_cord don't work
+jpmExp.pb <- vector("list", 26)
+names(jpmExp.pb) <- names(jpmExp)
 for(i in 1:26) {
-  try(jpmExp.out[[i]] <- matrix.slope(ages[[i]], jpmExp[[i]]))
+  try(jpmExp.pb[[i]] <- matrix.slope(ages[[i]], jpmExp[[i]]))
 }
-
-jpmExp.pofb <- c(jpmExp.out, jpmExp.out2)
-
-save(list = c("jpmExp", "jpmExp.f", "jpmExp.pb"), file = "jpmData.rdata")
 
 #get f statistics and p values
 jpmExp.f <- vector("list", 26)
@@ -51,6 +44,8 @@ names(jpmExp.f) <- names(jpmExp)
 for(i in 1:26) {
   try(jpmExp.f[[i]] <- matrix.poff(ages[[i]], jpmExp[[i]]))
 }
+
+save(list = c("jpmExp", "jpmExp.f", "jpmExp.pb"), file = "jpmData.rdata")
 
 # fix matrix column names
 for(i in 1:26) {
@@ -64,12 +59,14 @@ for(i in 1:26) {
 jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3]))))
 
 # average of fraction of significant probes closely matches jpm result
- mean(unlist(lapply(jpmExp.fp[-c(19, 20)], function (x) (sum(x <= .05, na.rm = TRUE) / length(x)))))
-# [1] 0.04272213
+ mean(unlist(lapply(jpmExp.fp[-c(19, 20)], function (x) (sum(x <= .025 | x >= .975, na.rm = TRUE) / length(x)))))
+# [1] 0.07845494
 
 # TODO use code from lm.fit and summary.lm to make efficient probe/row based model fitting
+# see http://reliawiki.org/index.php/Simple_Linear_Regression_Analysis
 
 # pick out genes with significant linear realtionship to age
+jpmExp.pb[19:20] <- NA
 jpmExp.b1p <- lapply(jpmExp.pb, function(x) if(!is.na(x)) x[, last.ind(colnames(x), 2):last.ind(colnames(x))])
 jpmExp.slope <- mapply(cbind, jpmExp.b1p, jpmExp.fp)
 for(i in 1:26) if(is.numeric(jpmExp.slope[[i]])) colnames(jpmExp.slope[[i]]) <- c("b1", "p of b1", "p of F")
@@ -110,7 +107,6 @@ for(n in names(jpmSig)) {
     jpmNeg[[n]] <- jpmSig[[n]][jpmSig[[n]][, 2] < 0,]
   }
 }
-
 
 ### functions
 
@@ -160,6 +156,7 @@ matrix.poff <- function(y, x) {
 
 last.row <- function (vec, n = 1) vec[(length(vec) - n + 1):length(vec)]
 last.ind <- function (vec, n = 1) length(vec) - n + 1
+
 # apply median norm to df columns
 med.normalize <- function(mat) {
   out <- mat
