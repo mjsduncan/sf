@@ -148,7 +148,7 @@ matrix.poff <- function(y, x) {
   out <- t(apply(x, 1, function(r) row.poff(y, r)))
   out <- cbind(x, out)
   out <- rbind(c(y, NA, NA, NA), out)
-  colnames(out) <- , c("age", rownames(out))
+  colnames(out) <- c("age", rownames(out))
 }
   
 # fix failure to name columns in matrix.poff

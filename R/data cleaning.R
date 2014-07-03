@@ -56,7 +56,7 @@ BiocInstaller::biocLite(paste(unique(arrays[["bioc_package"]]), "db", sep = ".")
 # dowlnoad geo datasets into list of GEOData objects
 gdsData <- vector("list",length(geodsets))
 names(gdsData) <- names(geodsets)
-for(i in 1:length(geodsets)){gdsData[[i]] <- getGEO(GEO = geodsets[i], destdir = '~/github/stevia/data')}
+for(i in 1:length(geodsets)){gdsData[[i]] <- getGEO(GEO = geodsets[i], destdir = '~/projects/sf/data')}#'~/github/stevia/data')}
 
 # make list of gds expression data matrices
 gdsExp <- vector("list",length(geodsets))
@@ -280,7 +280,7 @@ probe2gene <- vector("list", length(geodsets))
 names(probe2gene) <- names(geodsets)
 for(i in 1:length(geodsets)) {probe2gene[[i]] <- dataTable(gdsData[[i]])@table[, 1:2]}
 # probe2gene <- lapply(probe2gene, function(x) lapply(x, as.character))
-probe2gene <- lapply(probe2gene, function(x) data.frame(probe = x[[1]], gene = x[[2]], stringsAsFactors = FALSE))
+probe2gene <- lapply(probe2gene, function(x) data.frame(probe = as.character(x[[1]]), gene = as.character(x[[2]]), stringsAsFactors = FALSE))
 
 save(gdsData, gdsDt, gdsExp, probe2gene, file = "gdsData.rdata")
 
