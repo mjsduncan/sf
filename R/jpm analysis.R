@@ -31,7 +31,7 @@ jpmExp <- lapply(jpmExp, log2)
 # compute slopes and p values
 jpmExp <- mapply(matrix.slope, ages, jpmExp)
 
-#stromal & spinal_cord don't work
+#stromal & spinal_cord don't work - for some values model doesn't converge.  fixed with "tryCatch" in function "row.slope"
 jpmExp.pb <- vector("list", 26)
 names(jpmExp.pb) <- names(jpmExp)
 for(i in 1:26) {
@@ -42,34 +42,31 @@ for(i in 1:26) {
 jpmExp.f <- vector("list", 26)
 names(jpmExp.f) <- names(jpmExp)
 for(i in 1:26) {
-  try(jpmExp.f[[i]] <- matrix.poff(ages[[i]], jpmExp[[i]]))
+  try(jpmExp.f[[i]] <- poff(ages[[i]], jpmExp[[i]]))
 }
 
 save(list = c("jpmExp", "jpmExp.f", "jpmExp.pb"), file = "jpmData.rdata")
 
-# fix matrix column names
-for(i in 1:26) {
-  if(!is.null(jpmExp.f[[i]])) {
-    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 3)] <- "F"
-    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 2)] <- "df1"
-    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]))] <- "df2"
-  }
-}
-
 jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3]))))
 
 # average of fraction of significant probes closely matches jpm result
- mean(unlist(lapply(jpmExp.fp[-c(19, 20)], function (x) (sum(x <= .025 | x >= .975, na.rm = TRUE) / length(x)))))
-# [1] 0.07845494
+ mean(unlist(lapply(jpmExp.fp, function (x) (sum(x <= .025 | x >= .975, na.rm = TRUE) / length(x)))))
+# [1] 0.07712054
 
 # TODO use code from lm.fit and summary.lm to make efficient probe/row based model fitting
 # see http://reliawiki.org/index.php/Simple_Linear_Regression_Analysis
 
 # pick out genes with significant linear realtionship to age
-jpmExp.pb[19:20] <- NA
 jpmExp.b1p <- lapply(jpmExp.pb, function(x) if(!is.na(x)) x[, last.ind(colnames(x), 2):last.ind(colnames(x))])
-jpmExp.slope <- mapply(cbind, jpmExp.b1p, jpmExp.fp)
-for(i in 1:26) if(is.numeric(jpmExp.slope[[i]])) colnames(jpmExp.slope[[i]]) <- c("b1", "p of b1", "p of F")
+
+# fix stromal and spinal_cord
+for(i in 1:26) {
+  jpmExp.b1p[[i]] <- na.omit(jpmExp.b1p[[i]])
+  jpmExp.slope[[i]] <- merge(as.data.frame(jpmExp.b1p[[i]]), as.data.frame(jpmExp.fp[[i]]), by = 0, all.x = TRUE)
+  row.names(jpmExp.slope[[i]]) <- jpmExp.slope[[i]][, 1] 
+  jpmExp.slope[[i]][, 1] <- NULL
+  names(jpmExp.slope[[i]]) <- c("b1", "p.b1", "p.F")
+}
 
 # why don't F test signifcant probes have significant slopes? 
 # $skeletal_ms
@@ -82,14 +79,12 @@ for(i in 1:26) if(is.numeric(jpmExp.slope[[i]])) colnames(jpmExp.slope[[i]]) <- 
 #
 # they are significant for 2 tailed tests!
 
-jpmSig <- lapply(jpmExp.slope, function(x) if(is.numeric(x)) x[x[, 3] <= .025 | x[, 3] >= .975,])
+jpmSig <- lapply(jpmExp.slope, function(x) x[x[, 3] <= .025 | x[, 3] >= .975,])
 
 # add original annotation
-jpmSig <- lapply(jpmSig, function(x) x[-1,])
 for(i in 1:26) {
   if(!is.null(jpmSig[[i]])) {
-    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]][match(rownames(jpmSig[[i]]), probe2gene[[i]][, 1]), 2], 
-      as.data.frame(jpmSig[[i]]), stringsAsFactors = FALSE)
+    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]][[2]][match(row.names(jpmSig[[i]]), probe2gene[[i]][[1]])], jpmSig[[i]], stringsAsFactors = FALSE)
   }
 }
 
@@ -129,29 +124,42 @@ impute.matrix <- function(mat) {
 
 # get slope and p value from row regression
 row.slope <- function (y, x) {
-  summary(lm(y ~ x))$coefficients[2, c(1,4)]
+  tryCatch(summary(lm(y ~ x))$coefficients[2, c(1,4)], error = function (c) c(NA, NA))
 }
 
-# column naming doesn't work
+# make nice matrix of values & results
 matrix.slope <- function(y, x) {
   out <- t(apply(x, 1, function(r) row.slope(y, r)))
-  out <- `colnames<-`(cbind(x, out), c(colnames(x), c("slope", "p")))
-  `rownames<-`(rbind(c(y, NA, NA), out), c("age", rownames(out)))
+  out <- cbind(x, out)
+  out <- rbind(c(y, Estimate = NA,'Pr(>|t|)' = NA), out)
+  rownames(out) <- c("age", rownames(out)[-1])
+  return(out)
 }
   
 # get p value of f statistic from row regression
 row.poff <- function (y, x) {
-  summary(lm(y ~ x))$fstatistic
+  out <- try(summary(lm(y ~ x))$fstatistic)
+  if(!is.numeric(out)) return(c(NA, NA, NA))
+  return(out)
 }
 
 # column naming doesn't work
 matrix.poff <- function(y, x) {
   out <- t(apply(x, 1, function(r) row.poff(y, r)))
-  out <- cbind(x, out)
-  out <- rbind(c(y, NA, NA, NA), out)
-  colnames(out) <- , c("age", rownames(out))
+  colnames(out) <- c("F", "df1", "df2")
+  return(out)
+
 }
   
+# combine
+poff <- function(y, x) {
+  out <-matrix.poff(y, x)
+  out <- cbind(x, out)
+  out <- rbind(c(y, "F" = NA,"df1" = NA, "df2" = NA), out)
+  rownames(out) <- c("age", rownames(out)[-1])
+  return(out)
+}
+
 # fix failure to name columns in matrix.poff
 
 last.row <- function (vec, n = 1) vec[(length(vec) - n + 1):length(vec)]
@@ -168,3 +176,4 @@ med.normalize <- function(mat) {
   return(out)
 }
   
+/l   

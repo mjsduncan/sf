@@ -275,12 +275,27 @@ ages$extraoc_ms <- ages$extraoc_ms[13:24]
 # 14 months 24 months  4 months 
 #        10        10         9 
 
-# extract probe and gene names
+# extract probe and gene names from data sets -- lots ofduplicates!
 probe2gene <- vector("list", length(geodsets))
 names(probe2gene) <- names(geodsets)
 for(i in 1:length(geodsets)) {probe2gene[[i]] <- dataTable(gdsData[[i]])@table[, 1:2]}
 # probe2gene <- lapply(probe2gene, function(x) lapply(x, as.character))
 probe2gene <- lapply(probe2gene, function(x) data.frame(probe = x[[1]], gene = x[[2]], stringsAsFactors = FALSE))
+# count & percent of duplicates
+sapply(probe2gene, function(x) sum(duplicated(x[[2]])))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle      kidney1      kidney2      m_brain      m_hippo        liver 
+#         3137         8189         5796         8189         5796         3141         8741          897          445        18337         2874         2874 
+#      m_heart         lung      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor  skeletal_ms   extraoc_ms laryngeal_ms 
+#         2343        18337        18337        18337         2874         2479         2479         2479         2479         2718         2718         2718 
+#      r_heart    CA1_hipp2 
+#         2718         2718 
+sapply(probe2gene, function(x) round(sum(duplicated(x[[2]]))/length(x[[2]]), 2))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle      kidney1      kidney2      m_brain      m_hippo        liver 
+#         0.25         0.37         0.26         0.37         0.26         0.25         0.39         0.14         0.07         0.41         0.23         0.23 
+#      m_heart         lung      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor  skeletal_ms   extraoc_ms laryngeal_ms 
+#         0.19         0.41         0.41         0.41         0.23         0.16         0.16         0.16         0.16         0.31         0.31         0.31 
+#      r_heart    CA1_hipp2 
+#         0.31         0.31 
 
 save(gdsData, gdsDt, gdsExp, probe2gene, file = "gdsData.rdata")
 

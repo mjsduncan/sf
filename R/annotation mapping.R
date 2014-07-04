@@ -1,15 +1,14 @@
 ### get current human homologues for mouse & rat expression data sets
-# uses jpmPos, jpmNeg from 'jpm analysis.R'
-
+# uses jpmPos, jpmNeg: data frames of gene symbols, slope w/age, p of slope, and p of 2 sided F , for alpha = .05 of regression from 'jpm analysis.R'
+# produces jpmPos.df, jpmNeg.df: data frames of probes, gene symbols, homologue symbols, & uniprot acc# mapping them
 # load databases
 library("org.Hs.eg.db")
-library("org.Mm.eg.db")
 library("org.Rn.eg.db")
 library("hom.Mm.inp.db")
 library("hom.Rn.inp.db")
 
 
-# make list of dataframes mapping affy probe to uniprot
+# make list of dataframes mapping affy probe to uniprot acc#
 probe2uniprot <- function(probes, db) {
   select(db, probes, columns = c("SYMBOL","UNIPROT"))
 }
@@ -103,12 +102,12 @@ jpmNeg.df <- mapply(merge, jpmNeg.df, jpmNeg.sym, MoreArgs = list(all = TRUE, st
 jpmPos.df <- lapply(jpmPos.df, function(x) x[!is.na(x[, 5]),])
 jpmNeg.df <- lapply(jpmNeg.df, function(x) x[!is.na(x[, 5]),])
 
-# gained 5% over just capitalizing mouse & rat gene symbols
+# gained > 5% over just capitalizing mouse & rat gene symbols
 summary(unlist(lapply(jpmPos.df, function(x) sum(toupper(x[, 4]) == x[, 5])/dim(x)[1])))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#  0.9008  0.9463  0.9565  0.9557  0.9729  1.0000 
+#  0.9008  0.9433  0.9522  0.9544  0.9722  1.0000 
 summary(unlist(lapply(jpmNeg.df, function(x) sum(toupper(x[, 4]) == x[, 5])/dim(x)[1])))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#  0.6667  0.9342  0.9514  0.9373  0.9651  1.0000 
+#  0.6667  0.9401  0.9514  0.9385  0.9644  1.0000 
 
 # 
