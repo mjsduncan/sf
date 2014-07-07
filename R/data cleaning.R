@@ -299,6 +299,20 @@ sapply(probe2gene, function(x) round(sum(duplicated(x[[2]]))/length(x[[2]]), 2))
 
 save(gdsData, gdsDt, gdsExp, probe2gene, file = "gdsData.rdata")
 
+# add current anotations to probe2gene
+probe2gene <- lapply(probe2gene, function(x) data.frame(probe = x$ID_REF, GEOgene = x$IDENTIFIER, stringsAsFactors = FALSE))
+
+probe2ez <- function(probes, db) {
+  select(db, probes, columns = c("SYMBOL","ENTREZID"))
+}
+
+for(n in names(probe2gene)) {
+  if(!is.null(probe2gene[[n]]))  {
+  require(arrays[n, "bioc_package"], character.only = TRUE)
+  probe2gene[[n]] <- merge(probe2gene[[n]], probe2ez(probe2gene[[n]]$probe, get(arrays[n, "bioc_package"])), by.x = "probe", by.y = "PROBEID", all = TRUE)
+  }
+}
+
 ### functions
 
 # convert  class "GEOData" Table method output to matrix

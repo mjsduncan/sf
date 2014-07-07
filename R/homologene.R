@@ -1,5 +1,5 @@
 ### make homologene homologue map
-homologene <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/homologene/homologene.data", header=F, stringsAsFactors = FALSE)
+homologene <- read.delim("ftp://ftp.ncbi.nih.gov/pub/HomoloGene/current/homologene.data", header=F, stringsAsFactors = FALSE)
 names(homologene) <- c("HID", "taxID", "egID", "symbol", "prot_gi", "prot_acc")
 # keep mouse, rat, human
 # 10090  Mus musculus
@@ -50,6 +50,52 @@ for(n in names(jpmPos)) {
   }
 }
 
+# copy human symbols & entrez ids to homo columns for symetry
+for(n in names(human)) {
+  jpmPosEz.df[[n]]$egID <- jpmPosEz.df[[n]]$ENTREZID
+  jpmPosEz.df[[n]]$symbol <- jpmPosEz.df[[n]]$SYMBOL
+  jpmNegEz.df[[n]]$egID <- jpmNegEz.df[[n]]$ENTREZID
+  jpmNegEz.df[[n]]$symbol <- jpmNegEz.df[[n]]$SYMBOL
+}
+
+# convert list columns to multiple rows
+row2nrows <- function(row) {
+  out <- row
+  n = length(out$egID[[1]])
+  if(n == 0) {  
+    out$egID <- ""
+    out$symbol <- ""
+    return(out)
+  }
+  if(n == 1) {  
+    out$egID <- as.character(unlist(out$egID))
+    out$symbol <- unlist(out$symbol)
+    return(out)
+  }
+out3 <- data.frame(PROBEID = character(0), SYMBOL = character(0), ENTREZID = character(0), egID = character(0), symbol = character(0))
+  for(i in 1:n) {
+  out2 <- out[, 1:3]
+  out2$egID <- as.character(out$egID[[1]][i])
+  out2$symbol <- out$symbol[[1]][i]
+  out3 <- rbind(out2, out3)
+  }
+  return(out3)
+}
+
+# apply row2nrows to whole dataframe
+dflist2nrows <- function(df) {
+  out <- data.frame(PROBEID = character(0), SYMBOL = character(0), ENTREZID = character(0), egID = character(0), symbol = character(0))
+  for(i in seq_len(dim(df)[1])) {
+    out <- rbind(out, row2nrows(df[i,]))
+  }
+  return(out)
+}
+
+jpmPosEz.homo <- lapply(jpmPosEz.df, dflist2nrows)
+jpmNegEz.homo <- lapply(jpmNegEz.df, dflist2nrows)
+
+
+
 # compare inparanoid and homologene maps
 # homologene map
 jpmPosEz.hs <- unique(unlist(sapply(jpmPosEz[1:6], function(x) x$ENTREZID)))
@@ -75,9 +121,52 @@ length(jpmNegEz.nhs)
 jpmNegEz <- unique(c(jpmNegEz.hs, jpmNegEz.nhs))
 length(jpmNegEz)
 # [1] 7630
+
 length(intersect(jpmPosEz, jpmNegEz))
 # [1] 3650
 
 jpmEz <- select(org.Hs.eg.db, unique(c(jpmPosEz, jpmNegEz)), columns = c("ENTREZID", "SYMBOL"))
 dim(jpmEz)
 # [1] 11271     2
+
+# inparaniod map size
+inparPos <- character(0)
+lapply(jpmPos.df, function(x) inparPos <<- c(inparPos, x$homSym))
+inparNeg <- character(0)
+lapply(jpmNeg.df, function(x) inparNeg <<- c(inparNeg, x$homSym))
+inpar <- unique(c(inparPos, inparNeg))
+
+length(inpar)
+# [1] 5633
+
+length(unique(c(jpmPosEz.nhs, jpmNegEz.nhs)))
+# [1] 7985
+
+### homo map wins!!
+
+# count mouse & rat homologues
+# rat map size
+ratPos <- character(4)
+lapply(jpmPosEz.df[names(rat)], function(x) ratPos <<- rbind(ratPos, x[, 2:5]))
+ratNeg <- character(4)
+lapply(jpmNegEz.df[names(rat)], function(x) ratNeg <<- rbind(ratNeg, x[, 2:5]))
+homoRat <- unique(rbind(ratPos, ratNeg))
+
+# non-uniqueness of map
+summary(as.factor(sapply(homoRat$egID, length)))
+#    0    1    2    3    4 
+#  806 4382   18    2    1 
+
+# mouse map size
+mousePos <- character(4)
+lapply(jpmPosEz.df[names(mouse)], function(x) mousePos <<- rbind(mousePos, x[, 2:5]))
+mouseNeg <- character(4)
+lapply(jpmNegEz.df[names(mouse)], function(x) mouseNeg <<- rbind(mouseNeg, x[, 2:5]))
+homoMouse <- unique(rbind(mousePos, mouseNeg))
+
+# non-uniqueness of map
+summary(as.factor(sapply(homoMouse$egID, length)))
+#    0    1    2    5    7 
+#  835 5641   24    1    1 
+
+homoMap <- rbind(homoRat, homoMouse)

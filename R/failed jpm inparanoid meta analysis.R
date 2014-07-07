@@ -1,46 +1,18 @@
-### jpm meta analysis, now using homologene homologue map and current probe annotations
-# uses jpmPos, jpmNeg from 'jpm analysis.R' and jpmPosEz.df, jpmNegEz.df from 'annotation mapping.R'
+### jpm meta analysis
+# uses jpmPos, jpmNeg from 'jpm analysis.R' and jpmPos.df, jpmNeg.df from 'annotation mapping.R'
 
-# how many currently annotated significant probes are duplicate genes
-sapply(jpmSig, function(x)summary(duplicated(x$jpmGene)))
-#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
-# FALSE "1624"    "1971"    "1566"    "1553"    "1312"    "693"     "2325"    "372"     "366"    
-# TRUE  "187"     "194"     "93"      "100"     "44"      "16"      "287"     "10"      "21"     
+# make vector of unique gene symbols linearly associated with age from all data sets
+HsPos <- unique(unlist(lapply(jpmPos[1:6], function(x) x$jpmGene)))
+nonHsPos <- unique(unlist(lapply(jpmPos.df, function(x) x$homSym)))
+Pos <- unique(c(HsPos, nonHsPos))
+sapply(list(HsPos, nonHsPos, Pos), length)
+# [1] 3623 3503 6342 -> 3623 + 3503 - 6342 = 784 duplicates
 
-#       m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
-# FALSE "2291"    "937"     "1065"    "461"     "2241"    "1776"    "2630"      "969"      "2289"   
-# TRUE  "74"      "29"      "43"      "5"       "142"     "67"      "113"       "52"       "120"    
-
-#       stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
-# FALSE "835"     "1086"      "1000"     "433"       "396"      "703"        "483"     "605"    
-# TRUE  "7"       "18"        "22"       "45"        "23"       "42"         "13"      "41"     
-
-# how many significantly different probes map to multiple genes?
-probe2many <- lapply(probe2gene, function(x) x$probe[x$probe %in% x$probe[duplicated(x$probe)]])
-sapply(probe2many, length)
-#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle      kidney1 
-#         1860         3411         1716         3411         1716         1860            9          931 
-#      kidney2      m_brain      m_hippo        liver      m_heart         lung      cochlea  hemato_stem 
-#          842         2853         1754         1754         1881         2853         2853         2853 
-#   myo_progen      r_hippo      stromal  spinal_cord   oculomotor  skeletal_ms   extraoc_ms laryngeal_ms 
-#         1754         1925         1925         1925         1925         1681         1681         1681 
-#      r_heart    CA1_hipp2 
-#         1681         1681 
-
-## original analysis:  duplicate gene log2 expression values averaged
-# count duplicate genes in probe sets as originally annotated
-sapply(jpmSig, function(x)summary(duplicated(x$jpmGene)))
-#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
-# FALSE "1624"    "1971"    "1566"    "1553"    "1312"    "693"     "2325"    "372"     "366"    
-# TRUE  "187"     "194"     "93"      "100"     "44"      "16"      "287"     "10"      "21"     
-
-#       m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
-# FALSE "2291"    "937"     "1065"    "461"     "2241"    "1776"    "2630"      "969"      "2289"   
-# TRUE  "74"      "29"      "43"      "5"       "142"     "67"      "113"       "52"       "120"    
-
-#       stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
-# FALSE "835"     "1086"      "1000"     "433"       "396"      "703"        "483"     "605"    
-# TRUE  "7"       "18"        "22"       "45"        "23"       "42"         "13"      "41"     
+HsNeg <- unique(unlist(lapply(jpmNeg[1:6], function(x) x$jpmGene)))
+nonHsNeg <- unique(unlist(lapply(jpmNeg.df, function(x) x$homSym)))
+Neg <- unique(c(HsNeg, nonHsNeg))
+sapply(list(HsNeg, nonHsNeg, Neg), length)
+# [1] 4062 3516 6711 -> 4062 + 3516 - 6711 = 867 duplicates
 
 # average fraction of individual data sets differentially expressed 2 sided p value < .05
 # average of fraction of significant probes are close to jpm result except more are negatively correlated than positive...
@@ -48,10 +20,9 @@ summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.02203 0.02742 0.03529 0.03773 0.04516 0.08202 
 
-# with duplicates removed
-summary(unlist(lapply(jpmExp.slope, function (x) 
-  sum((x[!duplicated(x$), 3] <= .025 | x[, 3] >= .975) & x[,1] > 0, na.rm = TRUE) / dim(x)[1]
-)))
+summary(unlist(lapply(jpmPos, function (x) sum(x[, 4] <= .025 | x[, 4] >= .975))))
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#   187.0   309.8   502.0   646.8   946.0  1522.0 
 
 summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] < 0, na.rm = TRUE) / dim(x)[1]))))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -68,19 +39,6 @@ sum(unlist(lapply(jpmExp.slope, function(x) dim(x)[1])))
 # total expression levels linearly related to age
 sum(unlist(lapply(jpmSig, function(x) dim(x)[1])))
 # [1] 33790
-
-# make vector of unique gene symbols linearly associated with age from all data sets
-HsPos <- unique(unlist(lapply(jpmPos[1:6], function(x) x$jpmGene)))
-nonHsPos <- unique(unlist(lapply(jpmPos.df, function(x) x$homSym)))
-Pos <- unique(c(HsPos, nonHsPos))
-sapply(list(HsPos, nonHsPos, Pos), length)
-# [1] 3623 3503 6342 -> 3623 + 3503 - 6342 = 784 overlap between human & rodent genes
-
-HsNeg <- unique(unlist(lapply(jpmNeg[1:6], function(x) x$jpmGene)))
-nonHsNeg <- unique(unlist(lapply(jpmNeg.df, function(x) x$homSym)))
-Neg <- unique(c(HsNeg, nonHsNeg))
-sapply(list(HsNeg, nonHsNeg, Neg), length)
-# [1] 4062 3516 6711 -> 4062 + 3516 - 6711 = overlap between human & rodent genes
 
 # get k, the number of experiments in which a gene is over/under expressed.  
 kpos <- numeric(length(Pos))

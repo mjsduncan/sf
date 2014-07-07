@@ -4,7 +4,7 @@
 
 jpmExp <- lapply(gdsExp, impute.matrix)
 
-# how many probe sets were eliminated?
+# how many probe sets were eliminated because missing > 30%?
 unlist(lapply(gdsExp, function(x) dim(x)[1])) - unlist(lapply(jpmExp, function(x) dim(x)[1]))
 #      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle      kidney1 
 #           65           68           68           68           68           93            0         1777 
@@ -31,7 +31,7 @@ jpmExp <- lapply(jpmExp, log2)
 # compute slopes and p values
 jpmExp <- mapply(matrix.slope, ages, jpmExp)
 
-#stromal & spinal_cord don't work - for some values model doesn't converge.  fixed with "tryCatch" in function "row.slope"
+# NOTE: FIXED -- stromal & spinal_cord don't work - for some values model doesn't converge.  fixed with "tryCatch" in function "row.slope"
 jpmExp.pb <- vector("list", 26)
 names(jpmExp.pb) <- names(jpmExp)
 for(i in 1:26) {
@@ -81,10 +81,10 @@ for(i in 1:26) {
 
 jpmSig <- lapply(jpmExp.slope, function(x) x[x[, 3] <= .025 | x[, 3] >= .975,])
 
-# add original annotation
+# add original annotation (untested after probe2gene modified to include current annotation)
 for(i in 1:26) {
   if(!is.null(jpmSig[[i]])) {
-    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]][[2]][match(row.names(jpmSig[[i]]), probe2gene[[i]][[1]])], jpmSig[[i]], stringsAsFactors = FALSE)
+    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]][[2]][match(row.names(jpmSig[[i]]), probe2gene[[i]]$GEOgene)], jpmSig[[i]], stringsAsFactors = FALSE)
   }
 }
 
