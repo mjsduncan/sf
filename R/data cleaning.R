@@ -56,7 +56,7 @@ BiocInstaller::biocLite(paste(unique(arrays[["bioc_package"]]), "db", sep = ".")
 # dowlnoad geo datasets into list of GEOData objects
 gdsData <- vector("list",length(geodsets))
 names(gdsData) <- names(geodsets)
-for(i in 1:length(geodsets)){gdsData[[i]] <- getGEO(GEO = geodsets[i], destdir = '~/github/stevia/data')}
+for(i in 1:length(geodsets)){gdsData[[i]] <- getGEO(GEO = geodsets[i], destdir = '~/projects/sf/data')}#'~/github/stevia/data')}
 
 # make list of gds expression data matrices
 gdsExp <- vector("list",length(geodsets))

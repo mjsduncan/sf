@@ -109,5 +109,4 @@ summary(unlist(lapply(jpmPos.df, function(x) sum(toupper(x[, 4]) == x[, 5])/dim(
 summary(unlist(lapply(jpmNeg.df, function(x) sum(toupper(x[, 4]) == x[, 5])/dim(x)[1])))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 #  0.6667  0.9401  0.9514  0.9385  0.9644  1.0000 
-
 # 

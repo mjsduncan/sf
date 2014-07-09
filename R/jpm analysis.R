@@ -46,6 +46,18 @@ for(i in 1:26) {
 }
 
 save(list = c("jpmExp", "jpmExp.f", "jpmExp.pb"), file = "jpmData.rdata")
+<<<<<<< HEAD
+=======
+
+# fix matrix column names
+for(i in 1:26) {
+  if(!is.null(jpmExp.f[[i]])) {
+    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 3)] <- "F"
+    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 2)] <- "df1"
+    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]))] <- "df2"
+  }
+}
+>>>>>>> 1069a8431c56dc9487ac3f8fa8042b406c235c24
 
 jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3]))))
 
@@ -57,6 +69,7 @@ jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.
 # see http://reliawiki.org/index.php/Simple_Linear_Regression_Analysis
 
 # pick out genes with significant linear realtionship to age
+jpmExp.pb[19:20] <- NA
 jpmExp.b1p <- lapply(jpmExp.pb, function(x) if(!is.na(x)) x[, last.ind(colnames(x), 2):last.ind(colnames(x))])
 
 # fix stromal and spinal_cord
@@ -165,9 +178,15 @@ row.poff <- function (y, x) {
 # column naming doesn't work
 matrix.poff <- function(y, x) {
   out <- t(apply(x, 1, function(r) row.poff(y, r)))
+<<<<<<< HEAD
   colnames(out) <- c("F", "df1", "df2")
   return(out)
 
+=======
+  out <- cbind(x, out)
+  out <- rbind(c(y, NA, NA, NA), out)
+  colnames(out) <- c("age", rownames(out))
+>>>>>>> 1069a8431c56dc9487ac3f8fa8042b406c235c24
 }
   
 # combine
@@ -194,5 +213,3 @@ med.normalize <- function(mat) {
   }
   return(out)
 }
-  
-/l   

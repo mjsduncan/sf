@@ -217,4 +217,3 @@ summary(qPos)
 # too small, can't be right!
 
 library("RankProd")
-
