@@ -1,34 +1,8 @@
 ### jpm meta analysis, now using homologene homologue map and current probe annotations
-# uses jpmPos, jpmNeg from 'jpm analysis.R' and jpmPosEz.df, jpmNegEz.df from 'annotation mapping.R'
-
-# how many currently annotated significant probes are duplicate genes
-sapply(jpmSig, function(x)summary(duplicated(x$jpmGene)))
-#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
-# FALSE "1624"    "1971"    "1566"    "1553"    "1312"    "693"     "2325"    "372"     "366"    
-# TRUE  "187"     "194"     "93"      "100"     "44"      "16"      "287"     "10"      "21"     
-
-#       m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
-# FALSE "2291"    "937"     "1065"    "461"     "2241"    "1776"    "2630"      "969"      "2289"   
-# TRUE  "74"      "29"      "43"      "5"       "142"     "67"      "113"       "52"       "120"    
-
-#       stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
-# FALSE "835"     "1086"      "1000"     "433"       "396"      "703"        "483"     "605"    
-# TRUE  "7"       "18"        "22"       "45"        "23"       "42"         "13"      "41"     
-
-# how many significantly different probes map to multiple genes?
-probe2many <- lapply(probe2gene, function(x) x$probe[x$probe %in% x$probe[duplicated(x$probe)]])
-sapply(probe2many, length)
-#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle      kidney1 
-#         1860         3411         1716         3411         1716         1860            9          931 
-#      kidney2      m_brain      m_hippo        liver      m_heart         lung      cochlea  hemato_stem 
-#          842         2853         1754         1754         1881         2853         2853         2853 
-#   myo_progen      r_hippo      stromal  spinal_cord   oculomotor  skeletal_ms   extraoc_ms laryngeal_ms 
-#         1754         1925         1925         1925         1925         1681         1681         1681 
-#      r_heart    CA1_hipp2 
-#         1681         1681 
+# uses jpmPos, jpmNeg from 'jpm analysis.R' and jpmPosEz.homo, jpmNegEz.homo from 'homologene.R'
 
 ## original analysis:  duplicate gene log2 expression values averaged
-# count duplicate genes in probe sets as originally annotated
+# how many current GEO annotated significant probes are duplicate genes (possibly still more current than in original paper)
 sapply(jpmSig, function(x)summary(duplicated(x$jpmGene)))
 #       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
 # FALSE "1624"    "1971"    "1566"    "1553"    "1312"    "693"     "2325"    "372"     "366"    
@@ -41,6 +15,28 @@ sapply(jpmSig, function(x)summary(duplicated(x$jpmGene)))
 #       stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
 # FALSE "835"     "1086"      "1000"     "433"       "396"      "703"        "483"     "605"    
 # TRUE  "7"       "18"        "22"       "45"        "23"       "42"         "13"      "41"     
+
+# how many significantly different probes map to more than one gene?
+probe2many <- lapply(probe2gene, function(x) x$probe[x$probe %in% x$probe[duplicated(x$probe)]])
+sapply(probe2many, function(x) length(unique(x)))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#          600         1148          692         1148          692          600            4 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#          272          266          936          557          557          645          936 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#          936          936          557          758          758          758          758 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#          561          561          561          561          561 
+
+sapply(probe2many, function(x) length(unique(x)) / length(x))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#    0.3225806    0.3365582    0.4032634    0.3365582    0.4032634    0.3225806    0.4444444 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#    0.2921590    0.3159145    0.3280757    0.3175599    0.3175599    0.3429027    0.3280757 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#    0.3280757    0.3280757    0.3175599    0.3937662    0.3937662    0.3937662    0.3937662 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#    0.3337299    0.3337299    0.3337299    0.3337299    0.3337299 
 
 # average fraction of individual data sets differentially expressed 2 sided p value < .05
 # average of fraction of significant probes are close to jpm result except more are negatively correlated than positive...
@@ -48,19 +44,39 @@ summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.02203 0.02742 0.03529 0.03773 0.04516 0.08202 
 
-# with duplicates removed
-summary(unlist(lapply(jpmExp.slope, function (x) 
-  sum((x[!duplicated(x$), 3] <= .025 | x[, 3] >= .975) & x[,1] > 0, na.rm = TRUE) / dim(x)[1]
-)))
-
 summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] < 0, na.rm = TRUE) / dim(x)[1]))))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.01890 0.02512 0.03843 0.03940 0.04906 0.08400 
 
-summary(unlist(lapply(jpmNeg, function (x) sum(x[, 4] <= .025 | x[, 4] >= .975))))
-#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#   169.0   349.5   562.5   652.7  1016.0  1499.0 
+# with duplicates removed TODO: map rownames/probes to gene symbols to get actual values
+slopeGenes <- mapply(function(x, y) x$GEOgene <- y$GEOgene[match(row.names(x), y$probe)], jpmExp.slope, probe2gene)
+sapply(slopeGenes, function(x) summary(duplicated(x)))
+#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
+# FALSE "9450"    "14093"   "16846"   "14093"   "16846"   "9466"    "13949"   "4264"    "3821"   
+# TRUE  "3110"    "8122"    "5731"    "8122"    "5731"    "3067"    "8741"    "543"     "222"    
 
+#       m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen
+# FALSE "26764"   "9614"    "9614"    "8523"    "26764"   "26762"   "25914"     "7688"    
+# TRUE  "18337"   "2874"    "2874"    "1520"    "18337"   "18275"   "16955"     "1787"    
+
+#       r_hippo   stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart  
+# FALSE "13444"   "13439"   "13444"     "13444"    "6081"      "6081"     "6081"       "6081"   
+# TRUE  "2479"    "2474"    "2478"      "2478"     "2718"      "2718"     "2718"       "2718"   
+
+#       CA1_hipp2
+# FALSE "4852"   
+# TRUE  "1758"   
+
+jpmExp.slope.nd <- mapply(function(x, y) x[!duplicated(y),], jpmExp.slope, slopeGenes, SIMPLIFY = FALSE)
+
+summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] > 0, na.rm = TRUE) / dim(x)[1]))))
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.02145 0.02800 0.03507 0.03771 0.04178 0.08375 
+
+summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] < 0, na.rm = TRUE) / dim(x)[1]))))
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.01612 0.02508 0.03686 0.03883 0.04887 0.07672 
+ 
 # total expression levels in all experiments
 sum(unlist(lapply(jpmExp.slope, function(x) dim(x)[1])))
 # [1] 474305
@@ -70,32 +86,30 @@ sum(unlist(lapply(jpmSig, function(x) dim(x)[1])))
 # [1] 33790
 
 # make vector of unique gene symbols linearly associated with age from all data sets
-HsPos <- unique(unlist(lapply(jpmPos[1:6], function(x) x$jpmGene)))
-nonHsPos <- unique(unlist(lapply(jpmPos.df, function(x) x$homSym)))
-Pos <- unique(c(HsPos, nonHsPos))
-sapply(list(HsPos, nonHsPos, Pos), length)
-# [1] 3623 3503 6342 -> 3623 + 3503 - 6342 = 784 overlap between human & rodent genes
+Pos <- unique(unlist(lapply(jpmPosEz.homo, function(x) x$symbol)))
+length(Pos)
+# [1] 7292
 
-HsNeg <- unique(unlist(lapply(jpmNeg[1:6], function(x) x$jpmGene)))
-nonHsNeg <- unique(unlist(lapply(jpmNeg.df, function(x) x$homSym)))
-Neg <- unique(c(HsNeg, nonHsNeg))
-sapply(list(HsNeg, nonHsNeg, Neg), length)
-# [1] 4062 3516 6711 -> 4062 + 3516 - 6711 = overlap between human & rodent genes
+Neg <- unique(unlist(lapply(jpmNegEz.homo, function(x) x$symbol)))
+length(Neg)
+# [1] 7631
+
+length(intersect(Pos, Neg))
+# [1] 3651  !!
 
 # get k, the number of experiments in which a gene is over/under expressed.  
 kpos <- numeric(length(Pos))
 names(kpos) <- Pos
-kpos.hs <- numeric(length(Pos))
-names(kpos.hs) <- Pos
-kpos.nhs <- numeric(length(Pos))
-names(kpos.nhs) <- Pos
-for(g in Pos) {
-  kpos.hs[g] <- sum(sapply(jpmPos[1:6], function(x) g %in% x$jpmGene), na.rm = TRUE)
-  kpos.nhs[g] <- sum(sapply(jpmPos.df, function(x) g %in% x$homSym), na.rm = TRUE)
-  kpos[g] <- kpos.hs[g] + kpos.nhs[g]
-}
+for(g in Pos) kpos[g] <- sum(sapply(jpmPosEz.homo, function(x) table(x$symbol)[g]), na.rm = TRUE)
 
 # get n, the number of experiments in which a gene is measured
+# add homologene symbols to probes
+homo2ez <- vector("list", 20)
+names(homo2ez) <- names(probe2gene[7:26])
+for(n in names(homo2ez)) {
+  homo2ez[[n]] <- unique(merge(probe2gene[[n]][, c(1, 4)], jpmPosEz.homo[[n]][,c(3, 5)], by = "ENTREZID"))
+}
+
 npos <- numeric(length(Pos))
 names(npos) <- Pos
 npos.hs <- numeric(length(Pos))
@@ -103,8 +117,8 @@ names(npos.hs) <- Pos
 npos.nhs <- numeric(length(Pos))
 names(npos.nhs) <- Pos
 for(g in Pos) {
-  npos.hs[g] <- sum(sapply(probe2gene[1:6], function(x) g %in% x$IDENTIFIER), na.rm = TRUE)
-  npos.nhs[g] <- sum(mapply(function(x, y) x$SYMBOL[match(g, x$homSym)] %in% y$IDENTIFIER, jpmPos.df, probe2gene[c(7:26)]))
+  npos.hs[g] <- sum(sapply(probe2gene[1:6], function(x) table(x$SYMBOL)[g]), na.rm = TRUE)
+  npos.nhs[g] <- sum(sapply(homo2ez, function(x) table(x$symbol)[g]), na.rm = TRUE)
   npos[g] <- npos.hs[g] + npos.nhs[g]
 }
 
@@ -142,17 +156,9 @@ length(sigPos.min)
 
 # do the same for negatively associated genes
 # get k, the number of experiments in which a gene is over/under expressed.  
-kneg <- numeric(length(Neg))
-names(kneg) <- Neg
-kneg.hs <- numeric(length(Neg))
-names(kneg.hs) <- Neg
-kneg.nhs <- numeric(length(Neg))
-names(kneg.nhs) <- Neg
-for(g in Neg) {
-  kneg.hs[g] <- sum(sapply(jpmNeg[1:6], function(x) g %in% x$jpmGene), na.rm = TRUE)
-  kneg.nhs[g] <- sum(sapply(jpmNeg.df, function(x) g %in% x$homSym), na.rm = TRUE)
-  kneg[g] <- kneg.hs[g] + kneg.nhs[g]
-}
+kpos <- numeric(length(Pos))
+names(kpos) <- Pos
+for(g in Pos) kpos[g] <- sum(sapply(jpmPosEz.homo, function(x) g %in% x$symbol), na.rm = TRUE)
 
 # get n, the number of experiments in which a gene is measured
 nneg <- numeric(length(Neg))

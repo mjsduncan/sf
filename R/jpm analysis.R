@@ -88,8 +88,27 @@ for(i in 1:26) {
   }
 }
 
-# add homologue mapping
-# add current annotation
+# count probes measured
+sapply(jpmExp.slope, function(x) dim(x)[1])
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#        12560        22215        22577        22215        22577        12533        22690 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#         4807         4043        45101        12488        12488        10043        45101 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#        45037        42869         9475        15923        15913        15922        15922 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#         8799         8799         8799         8799         6610 
+
+# count probes significantly measured slopes
+sapply(jpmSig, function(x) dim(x)[1])
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#         1811         2165         1659         1653         1356          709         2612 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#          382          387         2365          966         1108          466         2383 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#         1843         2743         1021         2409          842         1104         1022 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#          478          419          745          496          646 
 
 # split into positively  and negatively correlated
 jpmPos <- vector("list", 26)

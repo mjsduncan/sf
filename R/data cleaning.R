@@ -279,9 +279,9 @@ ages$extraoc_ms <- ages$extraoc_ms[13:24]
 probe2gene <- vector("list", length(geodsets))
 names(probe2gene) <- names(geodsets)
 for(i in 1:length(geodsets)) {probe2gene[[i]] <- dataTable(gdsData[[i]])@table[, 1:2]}
-# probe2gene <- lapply(probe2gene, function(x) lapply(x, as.character))
 probe2gene <- lapply(probe2gene, function(x) data.frame(probe = x[[1]], gene = x[[2]], stringsAsFactors = FALSE))
-# count & percent of duplicates
+
+# count & percent of duplicates in GEO supplied annotations
 sapply(probe2gene, function(x) sum(duplicated(x[[2]])))
 #      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle      kidney1      kidney2      m_brain      m_hippo        liver 
 #         3137         8189         5796         8189         5796         3141         8741          897          445        18337         2874         2874 
@@ -289,6 +289,7 @@ sapply(probe2gene, function(x) sum(duplicated(x[[2]])))
 #         2343        18337        18337        18337         2874         2479         2479         2479         2479         2718         2718         2718 
 #      r_heart    CA1_hipp2 
 #         2718         2718 
+
 sapply(probe2gene, function(x) round(sum(duplicated(x[[2]]))/length(x[[2]]), 2))
 #      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle      kidney1      kidney2      m_brain      m_hippo        liver 
 #         0.25         0.37         0.26         0.37         0.26         0.25         0.39         0.14         0.07         0.41         0.23         0.23 
@@ -312,6 +313,20 @@ for(n in names(probe2gene)) {
   probe2gene[[n]] <- merge(probe2gene[[n]], probe2ez(probe2gene[[n]]$probe, get(arrays[n, "bioc_package"])), by.x = "probe", by.y = "PROBEID", all = TRUE)
   }
 }
+
+# full probe count of duplicates - includes one to many probe mapping using current annotation
+sapply(probe2gene, function (x) summary(duplicated(x$probe)))
+#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
+# FALSE "12625"   "22283"   "22645"   "22283"   "22645"   "12626"   "22690"   "6584"    "6595"   
+# TRUE  "1260"    "2263"    "1024"    "2263"    "1024"    "1260"    "5"       "659"     "576"    
+# 
+# m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
+# FALSE "45101"   "12488"   "12488"   "12654"   "45101"   "45101"   "45101"     "12488"    "15923"  
+# TRUE  "1917"    "1197"    "1197"    "1236"    "1917"    "1917"    "1917"      "1197"     "1167"   
+# 
+# stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
+# FALSE "15923"   "15923"     "15923"    "8799"      "8799"     "8799"       "8799"    "8799"   
+# TRUE  "1167"    "1167"      "1167"     "1120"      "1120"     "1120"       "1120"    "1120"   
 
 ### functions
 

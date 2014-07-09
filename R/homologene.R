@@ -144,6 +144,61 @@ length(unique(c(jpmPosEz.nhs, jpmNegEz.nhs)))
 
 ### homo map wins!!
 
+# compare homologue count to original count
+
+# compare duplicate counts
+sapply(probe2gene, function (x) summary(duplicated(x$probe)))
+#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
+# FALSE "12625"   "22283"   "22645"   "22283"   "22645"   "12626"   "22690"   "6584"    "6595"   
+# TRUE  "1260"    "2263"    "1024"    "2263"    "1024"    "1260"    "5"       "659"     "576"    
+# 
+# m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
+# FALSE "45101"   "12488"   "12488"   "12654"   "45101"   "45101"   "45101"     "12488"    "15923"  
+# TRUE  "1917"    "1197"    "1197"    "1236"    "1917"    "1917"    "1917"      "1197"     "1167"   
+# 
+# stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
+# FALSE "15923"   "15923"     "15923"    "8799"      "8799"     "8799"       "8799"    "8799"   
+# TRUE  "1167"    "1167"      "1167"     "1120"      "1120"     "1120"       "1120"    "1120"   
+
+sapply(jpmPosEz.homo, function (x) length(x$PROBEID))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#          817         1168          611          729          526          372            7 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#          245          136          737          525          620          287          792 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#          509          820          530         1277          376          366          469 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#          341          233          258          302          378 
+sapply(jpmPosEz.homo, function (x) sum(duplicated(x$PROBEID)))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#           79          130           34           71           27           53            0 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#           57           26           71           60          110           43           74 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#           33           73           58          142           28           26           34 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#           54           24           44           36           91 
+
+sapply(jpmNegEz.homo, function (x) length(x$PROBEID))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#         1111         1100          745          990          507          415           10 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#          205          210          573          498          603          232          561 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#          480          712          588          924          351          613          470 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#          178          171          523          194          325 
+sapply(jpmNegEz.homo, function (x) sum(duplicated(x$PROBEID)))
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#           73           60           53           88           30           38            0 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#           18           44           40           26           42           18           65 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#           33           66           57           58           33           48           57 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#           21           17           67           23           27 
+
+
 # count mouse & rat homologues
 # rat map size
 ratPos <- character(4)
