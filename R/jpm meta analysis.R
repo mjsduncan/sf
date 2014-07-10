@@ -122,16 +122,10 @@ for(g in Pos) {
   npos[g] <- npos.hs[g] + npos.nhs[g]
 }
 
-npos.hom <- numeric(length(Pos))
-names(npos.hom) <- Pos
-for(g in Pos) {
-  npos.hom[g] <- sum(mapply(function(x, y) x$PROBEID[match(g, x$homSym)] %in% y$ID_REF, jpmPos.df, probe2gene[c(7:26)]))
-}
-
 # p value for null hypothesis binomial dist
-### functions
 # calculate cummulative binomial distribution
 cbd <- function(k, n, p) {
+  if(is.na(k) | is.na(n)) return(NA)
   pcb <- numeric(1)
   for(i in k:n){
     `<-`(pcb, pcb + choose(n, i)*p^i*(1-p)^(n-i))
@@ -139,52 +133,58 @@ cbd <- function(k, n, p) {
   return(pcb)
 }
 
-sigPos <- mapply(cbd, kpos, npos, 0.03773)
+sigPos <- mapply(cbd, kpos, npos, 0.03771)
 summary(sigPos)
-#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.00000 0.02634 0.10900 0.10490 0.17490 1.00000 
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# 0.00000 0.03771 0.14250 0.16290 0.24270 1.00000       1 
 length(sigPos)
-# [1] 6342
+# [1] 7293
 
 sigPos.min <- sigPos[sigPos < .05]
 summary(sigPos.min)
-#     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-# 0.000000 0.001677 0.013190 0.012400 0.019290 0.037730 
+#     Min.  1st Qu.   Median     Mean  3rd Qu.     Max.     NA's 
+# 0.000000 0.002603 0.013180 0.015300 0.026320 0.048360        1 
 length(sigPos.min)
-# [1] 1861
+# [1] 2004
 
 
 # do the same for negatively associated genes
 # get k, the number of experiments in which a gene is over/under expressed.  
-kpos <- numeric(length(Pos))
-names(kpos) <- Pos
-for(g in Pos) kpos[g] <- sum(sapply(jpmPosEz.homo, function(x) g %in% x$symbol), na.rm = TRUE)
+
+# make list of vectors of gene named counts
+geneCount <- vector("list", length(probe2gene))
+names(geneCount) <- names(probe2gene)
+for(n in names(geneCount)) {
+  geneCount[[n]] <- table(jpmNegEz.homo[[n]]$symbol)
+}
+
+kneg <- numeric(length(Neg))
+names(kneg) <- Neg
+for(g in Neg) kneg[g] <- sum(sapply(geneCount, function(x) x[g]), na.rm = TRUE)
 
 # get n, the number of experiments in which a gene is measured
+# add homologene symbols to probes
+homo2ezNeg <- vector("list", 20)
+names(homo2ezNeg) <- names(probe2gene[7:26])
+for(n in names(homo2ez)) {
+  homo2ezNeg[[n]] <- unique(merge(probe2gene[[n]][, c(1, 4)], jpmNegEz.homo[[n]][,c(3, 5)], by = "ENTREZID"))
+}
+
+geneCount <- vector("list", length(probe2gene))
+names(geneCount) <- names(probe2gene)
+for(n in names(geneCount[1:6])) geneCount[[n]] <- table(probe2gene[[n]]$SYMBOL)
+for(n in names(geneCount[7:26])) geneCount[[n]] <- table(homo2ezNeg[[n]]$symbol)
+
 nneg <- numeric(length(Neg))
 names(nneg) <- Neg
-nneg.hs <- numeric(length(Neg))
-names(nneg.hs) <- Neg
-nneg.nhs <- numeric(length(Neg))
-names(nneg.nhs) <- Neg
-for(g in Neg) {
-  nneg.hs[g] <- sum(sapply(probe2gene[1:6], function(x) g %in% x$IDENTIFIER), na.rm = TRUE)
-  nneg.nhs[g] <- sum(mapply(function(x, y) x$SYMBOL[match(g, x$homSym)] %in% y$IDENTIFIER, jpmNeg.df, probe2gene[c(7:26)]))
-  nneg[g] <- nneg.hs[g] + nneg.nhs[g]
-}
+for(g in Neg) nneg[g] <- sum(sapply(geneCount, function(x) x[g]), na.rm = TRUE)
 
-nneg.hom <- numeric(length(Neg))
-names(nneg.hom) <- Neg
-for(g in Neg) {
-  nneg.hom[g] <- sum(mapply(function(x, y) x$PROBEID[match(g, x$homSym)] %in% y$ID_REF, jpmNeg.df, probe2gene[c(7:26)]))
-}
-
-sigNeg <- mapply(cbd, kneg, nneg, 0.03940)
+sigNeg <- mapply(cbd, kneg, nneg, 0.03883)
 summary(sigNeg)
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.00000 0.02856 0.11360 0.11010 0.18210 1.00000 
+# 0.00000 0.03883 0.14650 0.16190 0.24210 1.00000 
 length(sigNeg)
-# [1] 6711
+# [1] 7632
 
 sigNeg.min <- sigNeg[sigNeg < .05]
 summary(sigNeg.min)
@@ -196,8 +196,8 @@ length(sigNeg.min)
 # make data frame to compare with original results
 agePos <- merge(jpmEz, data.frame(SYMBOL = names(sigPos.min), metaP = sigPos.min, stringsAsFactors = FALSE))
 ageNeg <- merge(jpmEz, data.frame(SYMBOL = names(sigNeg.min), metaP = sigNeg.min, stringsAsFactors = FALSE))
-# write.csv(agePos, file = "agePos.csv")
-# write.csv(ageNeg, file = "ageNeg.csv")
+write.csv(agePos, file = "agePos.csv")
+write.csv(ageNeg, file = "ageNeg.csv")
 
 # get original tables
 over.expressed <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/aging signatures/over expressed.csv", stringsAsFactors = FALSE)
@@ -206,14 +206,21 @@ under.expressed <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/
 write.csv(agePos[agePos$ENTREZID %in% over.expressed$EntrezGeneID,], file = "agePosInt.csv")
 write.csv(ageNeg[agePos$ENTREZID %in% over.expressed$EntrezGeneID,], file = "ageNegInt.csv")
 
+# check against fisher's inverse chi-square
+summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] > 0, na.rm = TRUE) / dim(x)[1]))))
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.02145 0.02800 0.03507 0.03771 0.04178 0.08375 
+
+summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] < 0, na.rm = TRUE) / dim(x)[1]))))
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.01612 0.02508 0.03686 0.03883 0.04887 0.07672 
 
 # add q values
-library("qvalue")
-qPos <- qvalue(sigPos, pi0.method="bootstrap")$qvalues
-summary(qPos)
-> summary(qPos)
-#      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-# 8.000e-10 1.456e-04 2.904e-04 2.267e-04 2.904e-04 1.472e-03 
-# too small, can't be right!
+pFslope <- unlist(sapply(jpmExp.slope, function(x) x$p.F))
+names(pFslope) <- unlist(sapply(jpmExp.slope, rownames))
 
-library("RankProd")
+
+
+
+
+

@@ -62,8 +62,8 @@ for(i in 1:26) {
 jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3]))))
 
 # average of fraction of significant probes closely matches jpm result
- mean(unlist(lapply(jpmExp.fp, function (x) (sum(x <= .025 | x >= .975, na.rm = TRUE) / length(x)))))
-# [1] 0.07712054
+ mean(unlist(lapply(jpmExp.fp, function (x) (sum(x <= .025 | x >= .975, na.rm = TRUE) / length(na.omit(x))))))
+# [1] 0.07712824
 
 # TODO use code from lm.fit and summary.lm to make efficient probe/row based model fitting
 # see http://reliawiki.org/index.php/Simple_Linear_Regression_Analysis
