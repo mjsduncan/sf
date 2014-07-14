@@ -32,21 +32,22 @@ names(jpmNegEz.df) <- names(jpmNeg)
 for(n in names(jpmPos)) {
   if(!is.null(jpmPos[[n]]))  {
   require(arrays[n, "bioc_package"], character.only = TRUE)
-  jpmPosEz.df[[n]] <- probe2Ez.df(row.names(jpmPos[[n]]), get(arrays[n, "bioc_package"]))
-  jpmNegEz.df[[n]] <- probe2Ez.df(row.names(jpmNeg[[n]]), get(arrays[n, "bioc_package"]))
+  jpmPosEz.df[[n]] <- probe2ez(row.names(jpmPos[[n]]), get(arrays[n, "bioc_package"]))
+  jpmNegEz.df[[n]] <- probe2ez(row.names(jpmNeg[[n]]), get(arrays[n, "bioc_package"]))
   }
 }
 jpmPosEz.df <- lapply(jpmPosEz.df, function(x) x[!(is.na(x[, 2]) & is.na(x[, 3])),])
 jpmNegEz.df <- lapply(jpmNegEz.df, function(x) x[!(is.na(x[, 2]) & is.na(x[, 3])),])
 
 # add columns with human homologue ed & symbol
-Ez.df2homo <- function(Ez.df) {
-  homo.hs[homo.hs$HID == homo.ro$HID[homo.ro$egID == Ez.df], 2:3]
+ez2homo <- function(ez) {
+  homo.hs[homo.hs$HID == homo.ro$HID[homo.ro$egID == ez], 2:3]
 }
+
 for(n in names(jpmPos)) {
   if(!is.null(jpmPos[[n]]))  {
-  jpmPosEz.df[[n]] <- cbind(jpmPosEz.df[[n]], t(sapply(jpmPosEz.df[[n]]$ENTREz.dfID, Ez.df2homo)))
-  jpmNegEz.df[[n]] <- cbind(jpmNegEz.df[[n]], t(sapply(jpmNegEz.df[[n]]$ENTREz.dfID, Ez.df2homo)))
+  jpmPosEz.df[[n]] <- cbind(jpmPosEz.df[[n]], t(sapply(jpmPosEz.df[[n]]$ENTREZID, ez2homo)))
+  jpmNegEz.df[[n]] <- cbind(jpmNegEz.df[[n]], t(sapply(jpmNegEz.df[[n]]$ENTREZID, ez2homo)))
   }
 }
 
@@ -58,6 +59,7 @@ for(n in names(human)) {
   jpmNegEz.df[[n]]$symbol <- jpmNegEz.df[[n]]$SYMBOL
 }
 
+# duplicate rows with probes mapping to multiple genes
 # convert list columns to multiple rows
 row2nrows <- function(row) {
   out <- row
@@ -94,40 +96,43 @@ dflist2nrows <- function(df) {
 jpmPosEz.homo <- lapply(jpmPosEz.df, dflist2nrows)
 jpmNegEz.homo <- lapply(jpmNegEz.df, dflist2nrows)
 
+# difference in row count after accounting for multiple genes per probe
+mapply(function(x, y) dim(y)[1] - dim(x)[1], jpmPosEz.df, jpmPosEz.homo)
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#            0            0            0            0            0            0            0 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#           11            2            4            6            4            1            6 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#            4            9            3           15            2            0            4 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#            2            0            1            3            7 
+mapply(function(x, y) dim(y)[1] - dim(x)[1], jpmNegEz.df, jpmNegEz.homo)
+#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+#            0            0            0            0            0            0            0 
+#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+#            1            7            1            1            1            0            6 
+#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+#            0            2            5            4            4            3            1 
+#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+#            0            0            4            0            1 
 
 
 # compare inparanoid and homologene maps
 # homologene map
-jpmPosEz.hs <- unique(unlist(sapply(jpmPosEz[1:6], function(x) x$ENTREZID)))
-length(jpmPosEz.hs)
-# [1] 3373
-
-jpmPosEz.nhs <- unique(unlist(sapply(jpmPosEz[7:26], function(x) x$egID)))
-length(jpmPosEz.nhs)
-# [1] 5067
-
-jpmPosEz <- unique(c(jpmPosEz.hs, jpmPosEz.nhs))
+jpmPosEz <- unique(unlist(sapply(jpmPosEz.homo, function(x) x$egID)))
 length(jpmPosEz)
-# [1] 7291
+# [1] 7750
 
-jpmNegEz.hs <- unique(unlist(sapply(jpmNegEz[1:6], function(x) x$ENTREZID)))
-length(jpmNegEz.hs)
-# [1] 3842
-
-jpmNegEz.nhs <- unique(unlist(sapply(jpmNegEz[7:26], function(x) x$egID)))
-length(jpmNegEz.nhs)
-# [1] 5118
-
-jpmNegEz <- unique(c(jpmNegEz.hs, jpmNegEz.nhs))
+jpmNegEz <- unique(unlist(sapply(jpmNegEz.homo, function(x) x$egID)))
 length(jpmNegEz)
-# [1] 7630
+# [1] 8395
 
 length(intersect(jpmPosEz, jpmNegEz))
-# [1] 3650
+# [1] 4114
 
 jpmEz <- select(org.Hs.eg.db, unique(c(jpmPosEz, jpmNegEz)), columns = c("ENTREZID", "SYMBOL"))
 dim(jpmEz)
-# [1] 11271     2
+# [1] 12031     2
 
 # inparaniod map size
 inparPos <- character(0)
@@ -139,8 +144,8 @@ inpar <- unique(c(inparPos, inparNeg))
 length(inpar)
 # [1] 5633
 
-length(unique(c(jpmPosEz.nhs, jpmNegEz.nhs)))
-# [1] 7985
+length(unique(c(unlist(sapply(jpmPosEz.homo[7:26], function(x) x$egID)), unlist(sapply(jpmNegEz.homo[7:26], function(x) x$egID)))))
+# [1] 8491
 
 ### homo map wins!!
 
@@ -160,46 +165,34 @@ sapply(probe2gene, function (x) summary(duplicated(x$probe)))
 # FALSE "15923"   "15923"     "15923"    "8799"      "8799"     "8799"       "8799"    "8799"   
 # TRUE  "1167"    "1167"      "1167"     "1120"      "1120"     "1120"       "1120"    "1120"   
 
-sapply(jpmPosEz.homo, function (x) length(x$PROBEID))
-#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
-#          817         1168          611          729          526          372            7 
-#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
-#          245          136          737          525          620          287          792 
-#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
-#          509          820          530         1277          376          366          469 
-#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
-#          341          233          258          302          378 
-sapply(jpmPosEz.homo, function (x) sum(duplicated(x$PROBEID)))
-#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
-#           79          130           34           71           27           53            0 
-#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
-#           57           26           71           60          110           43           74 
-#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
-#           33           73           58          142           28           26           34 
-#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
-#           54           24           44           36           91 
+sapply(jpmPosEz.homo, function (x) summary(duplicated(x$PROBEID)))
+#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
+# FALSE "939"     "1334"    "728"     "767"     "547"     "290"     "14"      "193"     "109"    
+# TRUE  "64"      "161"     "59"      "67"      "33"      "39"      "1"       "73"      "31"     
 
-sapply(jpmNegEz.homo, function (x) length(x$PROBEID))
-#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
-#         1111         1100          745          990          507          415           10 
-#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
-#          205          210          573          498          603          232          561 
-#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
-#          480          712          588          924          351          613          470 
-#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
-#          178          171          523          194          325 
-sapply(jpmNegEz.homo, function (x) sum(duplicated(x$PROBEID)))
-#      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
-#           73           60           53           88           30           38            0 
-#      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
-#           18           44           40           26           42           18           65 
-#      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
-#           33           66           57           58           33           48           57 
-#  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
-#           21           17           67           23           27 
+#       m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
+# FALSE "683"     "544"     "635"     "264"     "780"     "307"     "935"       "629"      "1312"   
+# TRUE  "73"      "77"      "143"     "50"      "82"      "12"      "89"        "66"       "207"    
+
+#       stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
+# FALSE "422"     "417"       "511"      "305"       "207"      "246"        "351"     "330"    
+# TRUE  "45"      "34"        "50"       "51"        "8"        "72"         "42"      "108"    
+
+sapply(jpmNegEz.homo, function (x) summary(duplicated(x$PROBEID)))
+#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
+# FALSE "1294"    "1296"    "834"     "1255"    "558"     "415"     "15"      "232"     "214"    
+# TRUE  "101"     "69"      "47"      "111"     "37"      "48"      "1"       "19"      "39"     
+
+#       m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
+# FALSE "466"     "611"     "796"     "216"     "471"     "223"     "764"       "781"      "1060"   
+# TRUE  "24"      "44"      "69"      "24"      "42"      "12"      "86"        "98"       "67"     
+
+#       stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
+# FALSE "379"     "702"       "518"      "145"       "124"      "678"        "194"     "418"    
+# TRUE  "46"      "60"        "65"       "16"        "34"       "94"         "33"      "43"     
 
 
-# count mouse & rat homologues
+# count mouse & rat homologues -- TODO: silence output to increase speed
 # rat map size
 ratPos <- character(4)
 lapply(jpmPosEz.df[names(rat)], function(x) ratPos <<- rbind(ratPos, x[, 2:5]))
@@ -210,7 +203,7 @@ homoRat <- unique(rbind(ratPos, ratNeg))
 # non-uniqueness of map
 summary(as.factor(sapply(homoRat$egID, length)))
 #    0    1    2    3    4 
-#  806 4382   18    2    1 
+#  934 4965   20    1    1 
 
 # mouse map size
 mousePos <- character(4)

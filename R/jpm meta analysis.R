@@ -4,17 +4,16 @@
 ## original analysis:  duplicate gene log2 expression values averaged
 # how many current GEO annotated significant probes are duplicate genes (possibly still more current than in original paper)
 sapply(jpmSig, function(x)summary(duplicated(x$jpmGene)))
-#       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
-# FALSE "1624"    "1971"    "1566"    "1553"    "1312"    "693"     "2325"    "372"     "366"    
-# TRUE  "187"     "194"     "93"      "100"     "44"      "16"      "287"     "10"      "21"     
-
-#       m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
-# FALSE "2291"    "937"     "1065"    "461"     "2241"    "1776"    "2630"      "969"      "2289"   
-# TRUE  "74"      "29"      "43"      "5"       "142"     "67"      "113"       "52"       "120"    
-
-#       stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
-# FALSE "835"     "1086"      "1000"     "433"       "396"      "703"        "483"     "605"    
-# TRUE  "7"       "18"        "22"       "45"        "23"       "42"         "13"      "41"     
+# FALSE "2011"    "2397"    "1901"    "1951"    "1500"    "696"     "3002"    "420"     "431"    
+# TRUE  "260"     "324"     "134"     "167"     "50"      "24"      "480"     "14"      "23"     
+# 
+# m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
+# FALSE "2206"    "1148"    "1408"    "482"     "2104"    "1185"    "3164"      "1336"     "2717"   
+# TRUE  "113"     "35"      "68"      "10"      "184"     "26"      "165"       "93"       "149"    
+# 
+# stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
+# FALSE "972"     "1336"      "1223"     "430"       "350"      "956"        "595"     "757"    
+# TRUE  "13"      "34"        "37"       "60"        "28"       "68"         "28"      "67"     
 
 # how many significantly different probes map to more than one gene?
 probe2many <- lapply(probe2gene, function(x) x$probe[x$probe %in% x$probe[duplicated(x$probe)]])
@@ -40,15 +39,15 @@ sapply(probe2many, function(x) length(unique(x)) / length(x))
 
 # average fraction of individual data sets differentially expressed 2 sided p value < .05
 # average of fraction of significant probes are close to jpm result except more are negatively correlated than positive...
-summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] > 0, na.rm = TRUE) / dim(x)[1]))))
+summary(unlist(lapply(jpmExp.slope, function (x) (sum(x[, 3] <= .05 & x[,1] > 0) / dim(x)[1]))))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.02203 0.02742 0.03529 0.03773 0.04516 0.08202 
+# 0.01692 0.03093 0.04279 0.04398 0.05117 0.09408 
 
-summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] < 0, na.rm = TRUE) / dim(x)[1]))))
+summary(unlist(lapply(jpmExp.slope, function (x) (sum(x[, 3] <= .05 & x[,1] < 0) / dim(x)[1]))))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.01890 0.02512 0.03843 0.03940 0.04906 0.08400 
+# 0.00997 0.02487 0.04636 0.04863 0.06555 0.10460 
 
-# with duplicates removed TODO: map rownames/probes to gene symbols to get actual values
+# how many genes are duplicated using current annotation?  a lot!
 slopeGenes <- mapply(function(x, y) x$GEOgene <- y$GEOgene[match(row.names(x), y$probe)], jpmExp.slope, probe2gene)
 sapply(slopeGenes, function(x) summary(duplicated(x)))
 #       h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
@@ -67,15 +66,16 @@ sapply(slopeGenes, function(x) summary(duplicated(x)))
 # FALSE "4852"   
 # TRUE  "1758"   
 
+# with duplicates removed -- percentage is halved!?!?!
 jpmExp.slope.nd <- mapply(function(x, y) x[!duplicated(y),], jpmExp.slope, slopeGenes, SIMPLIFY = FALSE)
 
-summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] > 0, na.rm = TRUE) / dim(x)[1]))))
+summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum(x[, 3] <= .05 & x[,1] > 0) / dim(x)[1]))))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.02145 0.02800 0.03507 0.03771 0.04178 0.08375 
+# 0.01496 0.02024 0.02101 0.02185 0.02486 0.02859 
 
-summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] < 0, na.rm = TRUE) / dim(x)[1]))))
+summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum(x[, 3] <= .05 & x[,1] < 0) / dim(x)[1]))))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.01612 0.02508 0.03686 0.03883 0.04887 0.07672 
+# 0.01574 0.01841 0.02100 0.02095 0.02365 0.02795 
  
 # total expression levels in all experiments
 sum(unlist(lapply(jpmExp.slope, function(x) dim(x)[1])))
@@ -83,44 +83,47 @@ sum(unlist(lapply(jpmExp.slope, function(x) dim(x)[1])))
 
 # total expression levels linearly related to age
 sum(unlist(lapply(jpmSig, function(x) dim(x)[1])))
-# [1] 33790
+# [1] 39332
 
 # make vector of unique gene symbols linearly associated with age from all data sets
 Pos <- unique(unlist(lapply(jpmPosEz.homo, function(x) x$symbol)))
 length(Pos)
-# [1] 7292
+# [1] 7750
 
 Neg <- unique(unlist(lapply(jpmNegEz.homo, function(x) x$symbol)))
 length(Neg)
-# [1] 7631
+# [1] 8395
 
 length(intersect(Pos, Neg))
-# [1] 3651  !!
+# [1] 4114  !!
 
-# get k, the number of experiments in which a gene is over/under expressed.  
+# make list of vectors of gene named counts
+geneCountPk <- vector("list", length(probe2gene))
+names(geneCountPk) <- names(probe2gene)
+for(n in names(geneCountPk)) {
+  geneCountPk[[n]] <- table(jpmPosEz.homo[[n]]$symbol)
+}
+
 kpos <- numeric(length(Pos))
 names(kpos) <- Pos
-for(g in Pos) kpos[g] <- sum(sapply(jpmPosEz.homo, function(x) table(x$symbol)[g]), na.rm = TRUE)
+for(g in Pos) kpos[g] <- sum(sapply(geneCountPk, function(x) x[g]), na.rm = TRUE)
 
 # get n, the number of experiments in which a gene is measured
 # add homologene symbols to probes
-homo2ez <- vector("list", 20)
-names(homo2ez) <- names(probe2gene[7:26])
+homo2ezPos <- vector("list", 20)
+names(homo2ezPos) <- names(probe2gene[7:26])
 for(n in names(homo2ez)) {
-  homo2ez[[n]] <- unique(merge(probe2gene[[n]][, c(1, 4)], jpmPosEz.homo[[n]][,c(3, 5)], by = "ENTREZID"))
+  homo2ezPos[[n]] <- unique(merge(probe2gene[[n]][, c(1, 4)], jpmPosEz.homo[[n]][,c(3, 5)], by = "ENTREZID"))
 }
+
+geneCountPn <- vector("list", length(probe2gene))
+names(geneCountPn) <- names(probe2gene)
+for(n in names(geneCountPn[1:6])) geneCountPn[[n]] <- table(probe2gene[[n]]$SYMBOL)
+for(n in names(geneCountPn[7:26])) geneCountPn[[n]] <- table(homo2ezPos[[n]]$symbol)
 
 npos <- numeric(length(Pos))
 names(npos) <- Pos
-npos.hs <- numeric(length(Pos))
-names(npos.hs) <- Pos
-npos.nhs <- numeric(length(Pos))
-names(npos.nhs) <- Pos
-for(g in Pos) {
-  npos.hs[g] <- sum(sapply(probe2gene[1:6], function(x) table(x$SYMBOL)[g]), na.rm = TRUE)
-  npos.nhs[g] <- sum(sapply(homo2ez, function(x) table(x$symbol)[g]), na.rm = TRUE)
-  npos[g] <- npos.hs[g] + npos.nhs[g]
-}
+for(g in Pos) npos[g] <- sum(sapply(geneCountPn, function(x) x[g]), na.rm = TRUE)
 
 # p value for null hypothesis binomial dist
 # calculate cummulative binomial distribution
@@ -133,34 +136,33 @@ cbd <- function(k, n, p) {
   return(pcb)
 }
 
-sigPos <- mapply(cbd, kpos, npos, 0.03771)
+sigPos <- mapply(cbd, kpos, npos, 0.04398)
 summary(sigPos)
-#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-# 0.00000 0.03771 0.14250 0.16290 0.24270 1.00000       1 
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.00000 0.03504 0.16470 0.16720 0.27010 1.00000 
 length(sigPos)
-# [1] 7293
+# [1] 7751
 
 sigPos.min <- sigPos[sigPos < .05]
 summary(sigPos.min)
-#     Min.  1st Qu.   Median     Mean  3rd Qu.     Max.     NA's 
-# 0.000000 0.002603 0.013180 0.015300 0.026320 0.048360        1 
+#     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+# 0.000000 0.001942 0.010940 0.017050 0.026020 0.048660 
 length(sigPos.min)
-# [1] 2004
+# [1] 2391
 
 
 # do the same for negatively associated genes
 # get k, the number of experiments in which a gene is over/under expressed.  
-
 # make list of vectors of gene named counts
-geneCount <- vector("list", length(probe2gene))
-names(geneCount) <- names(probe2gene)
-for(n in names(geneCount)) {
-  geneCount[[n]] <- table(jpmNegEz.homo[[n]]$symbol)
+geneCountNk <- vector("list", length(probe2gene))
+names(geneCountNk) <- names(probe2gene)
+for(n in names(geneCountNk)) {
+  geneCountNk[[n]] <- table(jpmNegEz.homo[[n]]$symbol)
 }
 
 kneg <- numeric(length(Neg))
 names(kneg) <- Neg
-for(g in Neg) kneg[g] <- sum(sapply(geneCount, function(x) x[g]), na.rm = TRUE)
+for(g in Neg) kneg[g] <- sum(sapply(geneCountNk, function(x) x[g]), na.rm = TRUE)
 
 # get n, the number of experiments in which a gene is measured
 # add homologene symbols to probes
@@ -170,28 +172,28 @@ for(n in names(homo2ez)) {
   homo2ezNeg[[n]] <- unique(merge(probe2gene[[n]][, c(1, 4)], jpmNegEz.homo[[n]][,c(3, 5)], by = "ENTREZID"))
 }
 
-geneCount <- vector("list", length(probe2gene))
-names(geneCount) <- names(probe2gene)
-for(n in names(geneCount[1:6])) geneCount[[n]] <- table(probe2gene[[n]]$SYMBOL)
-for(n in names(geneCount[7:26])) geneCount[[n]] <- table(homo2ezNeg[[n]]$symbol)
+geneCountNn <- vector("list", length(probe2gene))
+names(geneCountNn) <- names(probe2gene)
+for(n in names(geneCountNn[1:6])) geneCountNn[[n]] <- table(probe2gene[[n]]$SYMBOL)
+for(n in names(geneCountNn[7:26])) geneCountNn[[n]] <- table(homo2ezNeg[[n]]$symbol)
 
 nneg <- numeric(length(Neg))
 names(nneg) <- Neg
-for(g in Neg) nneg[g] <- sum(sapply(geneCount, function(x) x[g]), na.rm = TRUE)
+for(g in Neg) nneg[g] <- sum(sapply(geneCountNn, function(x) x[g]), na.rm = TRUE)
 
 sigNeg <- mapply(cbd, kneg, nneg, 0.03883)
 summary(sigNeg)
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.00000 0.03883 0.14650 0.16190 0.24210 1.00000 
+#  0.0000  0.0278  0.1264  0.1467  0.2421  1.0000 
 length(sigNeg)
-# [1] 7632
+# [1] 8396
 
 sigNeg.min <- sigNeg[sigNeg < .05]
 summary(sigNeg.min)
 #     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-# 0.000000 0.001899 0.014340 0.013300 0.020950 0.039400 
+# 0.000000 0.001821 0.008585 0.014260 0.022430 0.049900 
 length(sigNeg.min)
-# [1] 1861
+# [1] 2725
 
 # make data frame to compare with original results
 agePos <- merge(jpmEz, data.frame(SYMBOL = names(sigPos.min), metaP = sigPos.min, stringsAsFactors = FALSE))
@@ -207,7 +209,11 @@ write.csv(agePos[agePos$ENTREZID %in% over.expressed$EntrezGeneID,], file = "age
 write.csv(ageNeg[agePos$ENTREZID %in% over.expressed$EntrezGeneID,], file = "ageNegInt.csv")
 
 # check against fisher's inverse chi-square
-summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] > 0, na.rm = TRUE) / dim(x)[1]))))
+# add p values & slopes to homologues
+jpmPos <- jpmPosEz.homo
+jpmPos$ <- cbind(jpmPosEz.homo, jpmExp.slope[match(jpmPosEz.homo$PROBEID, row.names(jpmExp.slope)),])
+
+summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .05 & x[,1] > 0, na.rm = TRUE) / dim(x)[1]))))
 #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.02145 0.02800 0.03507 0.03771 0.04178 0.08375 
 

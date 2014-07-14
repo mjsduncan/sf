@@ -59,11 +59,11 @@ for(i in 1:26) {
 }
 >>>>>>> 1069a8431c56dc9487ac3f8fa8042b406c235c24
 
-jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3]))))
+jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3], lower.tail = FALSE))))
 
 # average of fraction of significant probes closely matches jpm result
- mean(unlist(lapply(jpmExp.fp, function (x) (sum(x <= .025 | x >= .975, na.rm = TRUE) / length(na.omit(x))))))
-# [1] 0.07712824
+ mean(unlist(lapply(jpmExp.fp, function (x) (sum(x <= .05, na.rm = TRUE) / length(na.omit(x))))))
+# [1] 0.09261139
 
 # TODO use code from lm.fit and summary.lm to make efficient probe/row based model fitting
 # see http://reliawiki.org/index.php/Simple_Linear_Regression_Analysis
@@ -81,23 +81,12 @@ for(i in 1:26) {
   names(jpmExp.slope[[i]]) <- c("b1", "p.b1", "p.F")
 }
 
-# why don't F test signifcant probes have significant slopes? 
-# $skeletal_ms
-# age                    NA           NA        NA
-# A01157cds_s_at 0.01849251  -0.06845535 0.9815075
-#
-# $m_heart                                         
-# age              NA        NA         NA
-# 100001_at 0.9712485  2.507187 0.02875146
-#
-# they are significant for 2 tailed tests!
-
-jpmSig <- lapply(jpmExp.slope, function(x) x[x[, 3] <= .025 | x[, 3] >= .975,])
+jpmSig <- lapply(jpmExp.slope, function(x) x[x[, 3] <= .05,])
 
 # add original annotation (untested after probe2gene modified to include current annotation)
 for(i in 1:26) {
   if(!is.null(jpmSig[[i]])) {
-    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]][[2]][match(row.names(jpmSig[[i]]), probe2gene[[i]]$GEOgene)], jpmSig[[i]], stringsAsFactors = FALSE)
+    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]]$GEOgene[match(row.names(jpmSig[[i]]), probe2gene[[i]]$probe)], jpmSig[[i]], stringsAsFactors = FALSE)
   }
 }
 
@@ -115,13 +104,13 @@ sapply(jpmExp.slope, function(x) dim(x)[1])
 # count probes significantly measured slopes
 sapply(jpmSig, function(x) dim(x)[1])
 #      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
-#         1811         2165         1659         1653         1356          709         2612 
+#         2271         2721         2035         2118         1550          720         3482 
 #      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
-#          382          387         2365          966         1108          466         2383 
+#          434          454         2319         1183         1476          492         2288 
 #      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
-#         1843         2743         1021         2409          842         1104         1022 
+#         1211         3329         1429         2866          985         1370         1260 
 #  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
-#          478          419          745          496          646 
+#          490          378         1024          623          824 
 
 # split into positively  and negatively correlated
 jpmPos <- vector("list", 26)
