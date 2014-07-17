@@ -1,5 +1,5 @@
 ##### recreate jpm paper analysis & compare with moses results
-# uses gdsExp from 'data cleaning.R'
+# uses gdsExp, probe2gene from 'data cleaning.R'
 ### jpm individual data set analysis recreation: linear model of individual gene expression with age
 
 jpmExp <- lapply(gdsExp, impute.matrix)
@@ -45,20 +45,6 @@ for(i in 1:26) {
   try(jpmExp.f[[i]] <- poff(ages[[i]], jpmExp[[i]]))
 }
 
-save(list = c("jpmExp", "jpmExp.f", "jpmExp.pb"), file = "jpmData.rdata")
-<<<<<<< HEAD
-=======
-
-# fix matrix column names
-for(i in 1:26) {
-  if(!is.null(jpmExp.f[[i]])) {
-    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 3)] <- "F"
-    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]), 2)] <- "df1"
-    colnames(jpmExp.f[[i]])[last.ind(colnames(jpmExp.f[[i]]))] <- "df2"
-  }
-}
->>>>>>> 1069a8431c56dc9487ac3f8fa8042b406c235c24
-
 jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.row(y, 3)[1], last.row(y, 3)[2], last.row(y, 3)[3], lower.tail = FALSE))))
 
 # average of fraction of significant probes closely matches jpm result
@@ -69,10 +55,11 @@ jpmExp.fp <- lapply(jpmExp.f, function (x) try(apply(x, 1, function (y) pf(last.
 # see http://reliawiki.org/index.php/Simple_Linear_Regression_Analysis
 
 # pick out genes with significant linear realtionship to age
-jpmExp.pb[19:20] <- NA
-jpmExp.b1p <- lapply(jpmExp.pb, function(x) if(!is.na(x)) x[, last.ind(colnames(x), 2):last.ind(colnames(x))])
+jpmExp.b1p <- lapply(jpmExp.pb, function(x) x[, last.ind(colnames(x), 2):last.ind(colnames(x))])
 
 # fix stromal and spinal_cord
+jpmExp.slope <- vector("list", length(jpmExp.b1p))
+names(jpmExp.slope) <- names(jpmExp.b1p)
 for(i in 1:26) {
   jpmExp.b1p[[i]] <- na.omit(jpmExp.b1p[[i]])
   jpmExp.slope[[i]] <- merge(as.data.frame(jpmExp.b1p[[i]]), as.data.frame(jpmExp.fp[[i]]), by = 0, all.x = TRUE)
@@ -81,13 +68,13 @@ for(i in 1:26) {
   names(jpmExp.slope[[i]]) <- c("b1", "p.b1", "p.F")
 }
 
+save(list = c("jpmExp", "jpmExp.slope", "probe2gene"), file = "~/GitHub/stevia/data/jpmData.rdata")
+
 jpmSig <- lapply(jpmExp.slope, function(x) x[x[, 3] <= .05,])
 
 # add original annotation (untested after probe2gene modified to include current annotation)
 for(i in 1:26) {
-  if(!is.null(jpmSig[[i]])) {
-    jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]]$GEOgene[match(row.names(jpmSig[[i]]), probe2gene[[i]]$probe)], jpmSig[[i]], stringsAsFactors = FALSE)
-  }
+  jpmSig[[i]] <- cbind(jpmGene = probe2gene[[i]]$GEOgene[match(row.names(jpmSig[[i]]), probe2gene[[i]]$probe)], jpmSig[[i]], stringsAsFactors = FALSE)
 }
 
 # count probes measured

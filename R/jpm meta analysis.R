@@ -4,14 +4,15 @@
 ## original analysis:  duplicate gene log2 expression values averaged
 # how many current GEO annotated significant probes are duplicate genes (possibly still more current than in original paper)
 sapply(jpmSig, function(x)summary(duplicated(x$jpmGene)))
+#      h_brain   muscle1   muscle2   muscle3   muscle4   muscle5   muscle    kidney1   kidney2  
 # FALSE "2011"    "2397"    "1901"    "1951"    "1500"    "696"     "3002"    "420"     "431"    
 # TRUE  "260"     "324"     "134"     "167"     "50"      "24"      "480"     "14"      "23"     
 # 
-# m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
+#      m_brain   m_hippo   liver     m_heart   lung      cochlea   hemato_stem myo_progen r_hippo  
 # FALSE "2206"    "1148"    "1408"    "482"     "2104"    "1185"    "3164"      "1336"     "2717"   
 # TRUE  "113"     "35"      "68"      "10"      "184"     "26"      "165"       "93"       "149"    
 # 
-# stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
+#     stromal   spinal_cord oculomotor skeletal_ms extraoc_ms laryngeal_ms r_heart   CA1_hipp2
 # FALSE "972"     "1336"      "1223"     "430"       "350"      "956"        "595"     "757"    
 # TRUE  "13"      "34"        "37"       "60"        "28"       "68"         "28"      "67"     
 
@@ -195,38 +196,59 @@ summary(sigNeg.min)
 length(sigNeg.min)
 # [1] 2725
 
-# make data frame to compare with original results
-agePos <- merge(jpmEz, data.frame(SYMBOL = names(sigPos.min), metaP = sigPos.min, stringsAsFactors = FALSE))
-ageNeg <- merge(jpmEz, data.frame(SYMBOL = names(sigNeg.min), metaP = sigNeg.min, stringsAsFactors = FALSE))
-write.csv(agePos, file = "agePos.csv")
-write.csv(ageNeg, file = "ageNeg.csv")
-
-# get original tables
-over.expressed <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/aging signatures/over expressed.csv", stringsAsFactors = FALSE)
-under.expressed <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/aging signatures/under expressed.csv", stringsAsFactors = FALSE)
-
-write.csv(agePos[agePos$ENTREZID %in% over.expressed$EntrezGeneID,], file = "agePosInt.csv")
-write.csv(ageNeg[agePos$ENTREZID %in% over.expressed$EntrezGeneID,], file = "ageNegInt.csv")
-
-# check against fisher's inverse chi-square
 # add p values & slopes to homologues
 jpmPos <- jpmPosEz.homo
-jpmPos$ <- cbind(jpmPosEz.homo, jpmExp.slope[match(jpmPosEz.homo$PROBEID, row.names(jpmExp.slope)),])
+jpmPos <- mapply(function (x, y) cbind(x, y[match(x$PROBEID, row.names(y)),]), jpmPos, jpmExp.slope, SIMPLIFY = FALSE)
 
-summary(unlist(lapply(jpmExp.slope, function (x) (sum((x[, 3] <= .05 & x[,1] > 0, na.rm = TRUE) / dim(x)[1]))))
-#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.02145 0.02800 0.03507 0.03771 0.04178 0.08375 
+jpmNeg <- jpmNegEz.homo
+jpmNeg <- mapply(function (x, y) cbind(x, y[match(x$PROBEID, row.names(y)),]), jpmNeg, jpmExp.slope, SIMPLIFY = FALSE)
 
-summary(unlist(lapply(jpmExp.slope.nd, function (x) (sum((x[, 3] <= .025 | x[, 3] >= .975) & x[,1] < 0, na.rm = TRUE) / dim(x)[1]))))
-#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.01612 0.02508 0.03686 0.03883 0.04887 0.07672 
+# # TODO: verify below, compare to original paper
+# # add q values -- q values determined from probe p values from all complete data sets 
+# pFslope <- unlist(sapply(jpmExp.slope, function(x) x$p.F))
+# names(pFslope) <- unlist(sapply(jpmExp.slope, rownames))
+# qFslope <- qvalue(pFslope, robust = TRUE)$qvalues #, pi0.method="bootstrap"
+# summary(qFslope)
+# #    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# #  0.0029  0.6956  0.7899  0.7448  0.8435  0.8795       3 
+# probeSig <- cbind(pFslope, qFslope)
+# 
+# for(n in names(jpmPos)) {
+#   jpmPos[[n]]$q.F <- probeSig[match(jpmPos[[n]]$PROBEID, row.names(probeSig)), 2]
+#   jpmNeg[[n]]$q.F <- probeSig[match(jpmNeg[[n]]$PROBEID, row.names(probeSig)), 2]
+# }
+# 
+# sapply(jpmPos, function (x) dim(x[x$q.F < .1,])[1])
+# #      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+# #           77           54           21           21            7            9            1 
+# #      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+# #           15           32            7           33            6            0            3 
+# #      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+# #            2           11            6          435           21           46          110 
+# #  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+# #           18            2            5            0            1 
+# 
+# sapply(jpmNeg, function (x) dim(x[x$q.F < .1,])[1])
+# #      h_brain      muscle1      muscle2      muscle3      muscle4      muscle5       muscle 
+# #          212           75           29           26            8            9            0 
+# #      kidney1      kidney2      m_brain      m_hippo        liver      m_heart         lung 
+# #           17           19            2            7            0            0            1 
+# #      cochlea  hemato_stem   myo_progen      r_hippo      stromal  spinal_cord   oculomotor 
+# #            0            1            3          126           32           21           20 
+# #  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
+# #            1            0            0            1            1 
 
-# add q values
-pFslope <- unlist(sapply(jpmExp.slope, function(x) x$p.F))
-names(pFslope) <- unlist(sapply(jpmExp.slope, rownames))
+save(jpmPos, jpmNeg, file = "~/GitHub/stevia/data/jpmSig.rdata")
+# TODO: complete below
+# check against fisher's inverse chi-square: calculate sum of logs of p values for each gene
+# function to calculate sum of logs of p values of a gene
+logsum <- function (gene, df) {
+  sum(log(df$p.F[df$symbol == gene]), na.rm = TRUE)
+} 
+invX2pos <- data.frame(gene = names(kpos), sigCount = kpos, slog = numeric(length(kpos)), stringsAsFactors = FALSE)
+for(g in invX2pos$gene) {
+  invX2pos$slog[invX2pos$gene == g] <- sum(sapply(jpmPos.uniq, function (x) logsum(g, x)), na.rm = TRUE)
+}
 
-
-
-
-
-
+invX2neg <- data.frame(gene = names(kneg), slog = numeric(length(kneg)), stringsAsFactors = FALSE)
+jpmNeg.uniq <- lapply(jpmNeg, function(x) unique(x[!duplicated(x$PROBEID), c(1, 5, 8)]))

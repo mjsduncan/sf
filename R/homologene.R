@@ -1,4 +1,7 @@
 ### make homologene homologue map
+# uses jpmPos, jpmNeg from 'jpm analysis.R'
+
+# download and clean homologene database
 homologene <- read.delim("ftp://ftp.ncbi.nih.gov/pub/HomoloGene/current/homologene.data", header=F, stringsAsFactors = FALSE)
 names(homologene) <- c("HID", "taxID", "egID", "symbol", "prot_gi", "prot_acc")
 # keep mouse, rat, human
@@ -20,7 +23,8 @@ library("hom.Mm.inp.db")
 library("hom.Rn.inp.db")
 
 
-# make list of dataframes mapping affy probe to entrez id
+# make lists of dfs mapping affy probe to entrez id for probes positively and negatively age associated
+# function to map vector of probes to symbol and entrez id given array annotation db
 probe2ez <- function(probes, db) {
   select(db, probes, columns = c("SYMBOL","ENTREZID"))
 }
@@ -116,38 +120,6 @@ mapply(function(x, y) dim(y)[1] - dim(x)[1], jpmNegEz.df, jpmNegEz.homo)
 #  skeletal_ms   extraoc_ms laryngeal_ms      r_heart    CA1_hipp2 
 #            0            0            4            0            1 
 
-
-# compare inparanoid and homologene maps
-# homologene map
-jpmPosEz <- unique(unlist(sapply(jpmPosEz.homo, function(x) x$egID)))
-length(jpmPosEz)
-# [1] 7750
-
-jpmNegEz <- unique(unlist(sapply(jpmNegEz.homo, function(x) x$egID)))
-length(jpmNegEz)
-# [1] 8395
-
-length(intersect(jpmPosEz, jpmNegEz))
-# [1] 4114
-
-jpmEz <- select(org.Hs.eg.db, unique(c(jpmPosEz, jpmNegEz)), columns = c("ENTREZID", "SYMBOL"))
-dim(jpmEz)
-# [1] 12031     2
-
-# inparaniod map size
-inparPos <- character(0)
-lapply(jpmPos.df, function(x) inparPos <<- c(inparPos, x$homSym))
-inparNeg <- character(0)
-lapply(jpmNeg.df, function(x) inparNeg <<- c(inparNeg, x$homSym))
-inpar <- unique(c(inparPos, inparNeg))
-
-length(inpar)
-# [1] 5633
-
-length(unique(c(unlist(sapply(jpmPosEz.homo[7:26], function(x) x$egID)), unlist(sapply(jpmNegEz.homo[7:26], function(x) x$egID)))))
-# [1] 8491
-
-### homo map wins!!
 
 # compare homologue count to original count
 

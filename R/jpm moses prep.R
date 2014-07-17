@@ -1,4 +1,4 @@
-### start with jpmExp from jpmData.rdata
+### start with jpmExp from jpmData.rdata.  6 arrays cover 20 data sets
 # make moses data sets
 # fix ages$lung
 ages$lung <- ages$lung[1:15]
@@ -240,3 +240,8 @@ gpl97$Row.names <- NULL
 gpl97 <- t(as.matrix(rbind(gpl97["age",], gpl97[row.names(gpl97) != "age",])))
 write.csv(gpl97, file = "~/projects/sf_results/gpl97.csv", col.names = TRUE, row.names = FALSE)
 
+# # example of combining data sets using Reduce
+# gpl.data <- vector("list", 6)
+# names(gpl.data) <- unique(arrays$to_acc)[c(1, 4, 7, 9, 11:12)]
+# for(n in names(gpl.data)) gpl.data[[n]] <- Reduce(cbind, gdsExp[get(n)])
+# sapply(gpl.data, dim)

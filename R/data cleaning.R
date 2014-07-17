@@ -50,7 +50,7 @@ row.names(arrays)[25:26] <- c("oculomotor", "extraoc_ms")
 row.names(arrays)[1:24] <- names(geodsets)[match(arrays[1:24,]$from_acc, geodsets)]
 arrays$bioc_package <- paste(arrays$bioc_package, ".db", sep = "")
 
-# install miacroarray annotation packages
+# install microarray annotation packages
 BiocInstaller::biocLite(paste(unique(arrays[["bioc_package"]]), "db", sep = "."))
 
 # dowlnoad geo datasets into list of GEOData objects
