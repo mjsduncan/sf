@@ -10,9 +10,11 @@ names(homologene) <- c("HID", "taxID", "egID", "symbol", "prot_gi", "prot_acc")
 # 9606  Homo sapiens
 homologene <- subset(homologene, taxID %in% c(10090, 10116, 9606))
 write.csv(homologene, file = "homo.csv", col.names = TRUE, row.names = FALSE)
-homo <- read.csv("~/GitHub/stevia/data/homo.csv", stringsAsFactors = FALSE)
-homo.hs <- subset(homo, taxID == 9606, select = c(HID, egID, symbol))
-homo.ro <- subset(homo, taxID != 9606, select = c(HID, egID, symbol))
+
+#load saved homologene file and split into human and rodent parts
+homo <- read.csv("~/GitHub/stevia/data/homo.csv", colClasses = "character", stringsAsFactors = FALSE)
+homo.hs <- subset(homo, taxID == "9606", select = c(HID, egID, symbol))
+homo.ro <- subset(homo, taxID != "9606", select = c(HID, egID, symbol))
 
 # make mapping homologene dfs
 # load databases
@@ -42,6 +44,7 @@ jpmNegEz.df <- lapply(jpmNegEz.df, function(x) x[!(is.na(x[, 2]) & is.na(x[, 3])
 
 # add columns with human homologue ed & symbol
 ez2homo <- function(ez) {
+  if(is.na(ez)) return(data.frame(egID = NA_character_, symbol = NA_character_))
   homo.hs[homo.hs$HID == homo.ro$HID[homo.ro$egID == ez], 2:3]
 }
 
@@ -85,7 +88,7 @@ out3 <- data.frame(PROBEID = character(0), SYMBOL = character(0), ENTREZID = cha
   return(out3)
 }
 
-# apply row2nrows to whole dataframe
+# function to apply row2nrows to whole dataframe
 dflist2nrows <- function(df) {
   out <- data.frame(PROBEID = character(0), SYMBOL = character(0), ENTREZID = character(0), egID = character(0), symbol = character(0))
   for(i in seq_len(dim(df)[1])) {
@@ -189,7 +192,22 @@ summary(as.factor(sapply(homoMouse$egID, length)))
 homoMap <- rbind(homoRat, homoMouse)
 
 # add homologues to probe2gene
-probe2homo <- list()
-for(n in names(probe2gene[7])) {
-  probe2homo[[n]] <- cbind(probe2gene[[n]][1:1000,], t(sapply(probe2gene[[n]]$ENTREZID, ez2homo)))
+# add homologue to probe2gene element row
+homoRow <- function(dfrow) {
+  homo <- ez2homo(dfrow$ENTREZID)
+  nRows <- dim(homo)[1]
+  if(nRows == 0) return(cbind(dfrow, egID = NA_character_, symbol = NA_character_))
+  cbind(dfrow[rep(1, nRows),], homo)
 }
+
+# step through each row of probe2gene data frame
+homoDf <- function(df) {
+  out <- data.frame(probe = character(0), GEOgene = character(0), SYMBOL = character(0), ENTREZID = character(0), egID = character(0), symbol = character(0))
+  for(i in 1:dim(df)[1]) {
+    out <- rbind(out, homoRow(df[i,]))
+  }
+  return(out)
+}
+
+probe2homo <- lapply(probe2gene[7:26], homoDf)
+save(probe2homo, file = "probe2homo.rdata")
