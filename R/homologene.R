@@ -19,9 +19,6 @@ homo.ro <- subset(homo, taxID != 9606, select = c(HID, egID, symbol))
 library("org.Hs.eg.db")
 library("org.Mm.eg.db")
 library("org.Rn.eg.db")
-library("hom.Mm.inp.db")
-library("hom.Rn.inp.db")
-
 
 # make lists of dfs mapping affy probe to entrez id for probes positively and negatively age associated
 # function to map vector of probes to symbol and entrez id given array annotation db
@@ -190,3 +187,9 @@ summary(as.factor(sapply(homoMouse$egID, length)))
 #  835 5641   24    1    1 
 
 homoMap <- rbind(homoRat, homoMouse)
+
+# add homologues to probe2gene
+probe2homo <- list()
+for(n in names(probe2gene[7])) {
+  probe2homo[[n]] <- cbind(probe2gene[[n]][1:1000,], t(sapply(probe2gene[[n]]$ENTREZID, ez2homo)))
+}
