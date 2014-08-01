@@ -113,13 +113,14 @@ for(n in names(jpmSig)) {
 
 ### functions
 
-# if < 30% na replace with row average
+# if < 30% na replace with row average, if > 30% missing delete row
 impute.row <- function(row) {
   if(sum(is.na(row)) / length(row) > .3) return(NULL)
   row[is.na(row)] <- mean(row, na.rm = TRUE)
   return(row)
 }
 
+# apply impute.row to matrix
 impute.matrix <- function(mat) {
   out <- apply(mat, 1, impute.row)
   out[sapply(out, is.null)] <- NULL
@@ -154,16 +155,10 @@ row.poff <- function (y, x) {
 # column naming doesn't work
 matrix.poff <- function(y, x) {
   out <- t(apply(x, 1, function(r) row.poff(y, r)))
-<<<<<<< HEAD
   colnames(out) <- c("F", "df1", "df2")
   return(out)
-
-=======
-  out <- cbind(x, out)
-  out <- rbind(c(y, NA, NA, NA), out)
-  colnames(out) <- c("age", rownames(out))
->>>>>>> 1069a8431c56dc9487ac3f8fa8042b406c235c24
 }
+
   
 # combine
 poff <- function(y, x) {
