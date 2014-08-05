@@ -20,6 +20,7 @@ GPL97 <- row.names(arrays)[arrays$to_acc == "GPL97"]
 GPL96 <- row.names(arrays)[arrays$to_acc == "GPL96"]
 
 # apply wrapper function to lists data sets with the same array
+load("~/GitHub/stevia/data/jpmEset.rdata")
 gpl.zscore <- vector("list", 6)
 names(gpl.zscore) <- unique(arrays$to_acc)[c(1, 4, 7, 9, 11:12)]
 for(n in names(gpl.zscore)) gpl.zscore[[n]] <- zScores(jpmEset[get(n)], age.cat[get(n)])

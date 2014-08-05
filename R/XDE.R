@@ -77,16 +77,37 @@ chipBurn <- mapply(xde, burnParams, chipEsets)
 # graphs of c2 for each chipBurn set
 lapply(chipBurn, function(x) plot.ts(x$c2, ylab = "c2", xlab = "iterations", plot.type = "single", main = names(eval(sys.call(1)[[2]]))[substitute(x)[[3]]]))
 
+for(n in names(burnParams)) {
+  directory(burnParams[[n]]) <- paste("~/Github/XDE/", n, "chipLogs", sep = "")
+  directory(chipBurn[[n]]) <- paste("~/Github/XDE/", n, "chipLogs", sep = "")
+  
+}
+
 chipBurnBES <- lapply(chipBurn, calculateBayesianEffectSize)
 chipBurnPosAv <- lapply(chipBurn, calculatePosteriorAvg, burnin = 8)
-chipBurnZ <- lapply(chipEsets, function(x) ssStatistic("z", "age", x))
-chipBurnZx <- mapply(function(x, y) xsScores(x, N = unlist(nSamples(y))), chipBurnZ, chipEsets, SIMPLIFY = FALSE)
 
+# z scores from GeneMeta and histogram of z values for arrays
+chipBurnZ <- lapply(chipEsets, function(x) ssStatistic("z", "age", x))
+lapply(chipBurnZ, function(x) hist(x[, "zSco"], main = names(eval(sys.call(1)[[2]]))[substitute(x)[[3]]], xlab = "z score"))
+chip.pos <- lapply(chipBurnZ, function(x) symbolsInteresting(rankingStatistic = pnorm(x[, "zSco"]), percentile = .95))
+ op.conc <- symbolsInteresting(rankingStatistic=postAvg[, "concordant"])
+
+# GPL341 breaks down because stromal has all 0 for gene z scores !?!?
+chipNsamples <- lapply(chipEsets, nSamples)
+chipNsamples <- lapply(chipNsamples, sum)
+chipBurnZx <- list()
+names(chipBurnZx) <- names(chipEsets)
+for(n in names(chipBurnZ)) {
+  chipBurnZx[[n]] <- try(xsScores(chipBurnZ[[n]][, 1:length(chipNsamples[[n]])], chipNsamples[[n]]))
+}
+
+
+# this takes > 18 hours on celeron, waiting for bed stuy results
 chipParams <- burnParams
 for(n in names(chipEsets)) {
   iterations(chipParams[[n]]) <- 1000
   thin(chipParams[[n]]) <- 2
-  directory(chipParams[[n]]) <- paste("data/", n, "chipLogs", sep = "")
+  directory(chipParams[[n]]) <- paste("~/Github/XDE/", n, "chipLogs", sep = "")
   firstMcmc(chipParams[[n]]) <- lastMcmc(chipBurn[[n]])
 }
 
