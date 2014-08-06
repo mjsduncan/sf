@@ -79,8 +79,6 @@ lapply(chipBurn, function(x) plot.ts(x$c2, ylab = "c2", xlab = "iterations", plo
 
 for(n in names(burnParams)) {
   directory(burnParams[[n]]) <- paste("~/Github/XDE/", n, "chipLogs", sep = "")
-  directory(chipBurn[[n]]) <- paste("~/Github/XDE/", n, "chipLogs", sep = "")
-  
 }
 
 chipBurnBES <- lapply(chipBurn, calculateBayesianEffectSize)
@@ -94,13 +92,11 @@ chip.pos <- lapply(chipBurnZ, function(x) symbolsInteresting(rankingStatistic = 
 
 # GPL341 breaks down because stromal has all 0 for gene z scores !?!?
 chipNsamples <- lapply(chipEsets, nSamples)
-chipNsamples <- lapply(chipNsamples, sum)
 chipBurnZx <- list()
 names(chipBurnZx) <- names(chipEsets)
 for(n in names(chipBurnZ)) {
   chipBurnZx[[n]] <- try(xsScores(chipBurnZ[[n]][, 1:length(chipNsamples[[n]])], chipNsamples[[n]]))
 }
-
 
 # this takes > 18 hours on celeron, waiting for bed stuy results
 chipParams <- burnParams
