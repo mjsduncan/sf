@@ -33,13 +33,13 @@ lapply(gpl.zscore, function(x) write.csv(x, )
 # histogram of Q values for arrays
 lapply(gpl.zscore, function(x) hist(x[, "Qvals"], main = names(eval(sys.call(1)[[2]]))[substitute(x)[[3]]], xlab = " Q values"))
 
-# qq plot from vignette pdf
+# qq plot from vignette pdf (size isn't working)
 qq_plot <- function(Qvals, num.studies, title = "QQ Plot") {
   #quantiles of the chisq distribution
   chisqq <- qchisq(seq(0, .9999, .001), df = num.studies - 1)
   tmp<-quantile(Qvals, seq(0, .9999, .001), na.rm = TRUE)
-  qqplot(chisqq, tmp, ylab = "Quantiles of Sample",pch = "*",
-         xlab = "Quantiles of Chi square", main = title)
+  qqplot(chisqq, tmp, ylab = "Quantiles of Sample Q values",pch = "*",
+         xlab = "Quantiles of Chi square", main = title, width = 500, height = 500)
   lines(chisqq, chisqq, lty = "dotted", col = "red")
 }
 

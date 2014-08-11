@@ -75,11 +75,16 @@ for(n in names(chipEsets)) {
 chipBurn <- mapply(xde, burnParams, chipEsets)
 
 # graphs of c2 for each chipBurn set
-lapply(chipBurn, function(x) plot.ts(x$c2, ylab = "c2", xlab = "iterations", plot.type = "single", main = names(eval(sys.call(1)[[2]]))[substitute(x)[[3]]]))
-
-for(n in names(burnParams)) {
-  directory(burnParams[[n]]) <- paste("~/Github/XDE/", n, "chipLogs", sep = "")
+for(n in names(chipBurn)) {
+png(file = paste("C:/Users/user/Documents/GitHub/XDE/", n, "_c2Burn.png", sep = ""), width = 500, height = 500)
+plot.ts(chipBurn[[n]]$c2, ylab = "c2", xlab = "iterations", plot.type = "single", main = n)
+dev.off()
 }
+
+# move results out of github repo directory
+# for(n in names(chipBurn)) {
+#   chipBurn[[n]]@directory <- paste("~/Github/XDE/", n, "burnLogs", sep = "")
+# }
 
 chipBurnBES <- lapply(chipBurn, calculateBayesianEffectSize)
 chipBurnPosAv <- lapply(chipBurn, calculatePosteriorAvg, burnin = 8)
@@ -87,8 +92,19 @@ chipBurnPosAv <- lapply(chipBurn, calculatePosteriorAvg, burnin = 8)
 # z scores from GeneMeta and histogram of z values for arrays
 chipBurnZ <- lapply(chipEsets, function(x) ssStatistic("z", "age", x))
 lapply(chipBurnZ, function(x) hist(x[, "zSco"], main = names(eval(sys.call(1)[[2]]))[substitute(x)[[3]]], xlab = "z score"))
-chip.pos <- lapply(chipBurnZ, function(x) symbolsInteresting(rankingStatistic = pnorm(x[, "zSco"]), percentile = .95))
- op.conc <- symbolsInteresting(rankingStatistic=postAvg[, "concordant"])
+chip.pos <- lapply(chipBurnZ, function(x) symbolsInteresting(rankingStatistic = pnorm(na.omit(x[, "zSco"])), percentile = .95))
+library("graphics")
+for(n in names(chipBurnZ)) {
+  png(file = paste("C:/Users/user/Documents/GitHub/XDE/", n, "_pairs.png", sep = ""), width = 1000, height = 1000)
+  pairs(chipBurnZ[[n]][chip.pos[[n]]$order,], pch = chip.pos[[n]]$pch, col = chip.pos[[n]]$col, bg = chip.pos[[n]]$bg, upper.panel = NULL, cex = chip.pos[[n]]$cex, main = n)
+  dev.off()
+}
+chip.neg <- lapply(chipBurnZ, function(x) symbolsInteresting(rankingStatistic = pnorm(1 - na.omit(x[, "zSco"])), percentile = .95))
+for(n in names(chipBurnZ)) {
+  png(file = paste("C:/Users/user/Documents/GitHub/XDE/", n, "_pairsN.png", sep = ""), width = 1000, height = 1000)
+  pairs(chipBurnZ[[n]][chip.neg[[n]]$order,], pch = chip.neg[[n]]$pch, col = chip.neg[[n]]$col, bg = chip.neg[[n]]$bg, upper.panel = NULL, cex = chip.neg[[n]]$cex, main = n)
+  dev.off()
+}
 
 # GPL341 breaks down because stromal has all 0 for gene z scores !?!?
 chipNsamples <- lapply(chipEsets, nSamples)
@@ -110,3 +126,32 @@ for(n in names(chipEsets)) {
 date()
 chipRun <- mapply(xde, chipParams, chipEsets)
 date()
+
+#redo GPL341 without stromal
+GPL341a <- chipEsets$GPL341
+GPL341a[[1]] <- NULL
+zSco341a <- ssStatistic("z", "age", GPL341a)
+hist(zSco341a[, "zSco"], main = "GPL341a", xlab = "z score")
+
+GPL341a.zscore <- zScores(GPL341a, age.cat[names(GPL341a)])
+qq_plot(GPL341a.zscore[, "Qvals"], length(grep("zSco_Ex",colnames(GPL341a.zscore))), title = "GPL341 w/o \"stroma\"")
+IDRplot(na.omit(GPL341a.zscore), main = "GPL341 w/o \"stroma\"")
+
+GPL341a.pos <- symbolsInteresting(rankingStatistic = pnorm(na.omit(zSco341a[, "zSco"])), percentile = .95)
+  png(file = "C:/Users/user/Documents/GitHub/XDE/GPL341a_pairs.png", width = 1000, height = 1000)
+  pairs(zSco341a[GPL341a.pos$order,], pch = chip.pos[[n]]$pch, col = chip.pos[[n]]$col, bg = chip.pos[[n]]$bg, upper.panel = NULL, cex = chip.pos[[n]]$cex, main = "GPL341a")
+  dev.off()
+
+GPL341a.neg <- symbolsInteresting(rankingStatistic = pnorm(1 - na.omit(zSco341a[, "zSco"])), percentile = .95)
+  png(file = "C:/Users/user/Documents/GitHub/XDE/GPL341a_pairsN.png", width = 1000, height = 1000)
+  pairs(zSco341a[GPL341a.neg$order,], pch = chip.neg[[n]]$pch, col = chip.neg[[n]]$col, bg = chip.neg[[n]]$bg, upper.panel = NULL, cex = chip.neg[[n]]$cex, main = "GPL341a")
+  dev.off()
+
+# GPL341 breaks down because stromal has all 0 for gene z scores !?!?
+  zSco341aZx <- xsScores((zSco341a[, 1:length(nSamples(GPL341a))]), nSamples(GPL341a))
+qq_plot(zSco341aZx[, "Qvals"], length(grep("zSco_Ex",colnames(zSco341aZx))))
+
+        n <- "GPL97"
+  png(file = paste("C:/Users/user/Documents/GitHub/XDE/", n, "_pairsN.png", sep = ""), width = 1000, height = 1000)
+  pairs(chipBurnZ[[n]][chip.neg[[n]]$order,], pch = chip.neg[[n]]$pch, col = chip.neg[[n]]$col, bg = chip.neg[[n]]$bg, upper.panel = NULL, cex = chip.neg[[n]]$cex, main = n)
+  dev.off()
