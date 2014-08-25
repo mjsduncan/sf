@@ -72,7 +72,6 @@ read.clump <- function(file, lines, clump, readFunc=read.csv,
 }
 
 ### genescent data bases
-genage_human <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/sendat/genage_human.csv", stringsAsFactors = FALSE)
 longevity <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/sendat/longevity.csv", stringsAsFactors = FALSE)
 genage_models <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/sendat/genage_models.csv", stringsAsFactors = FALSE)
 anage_data <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/sendat/anage_data.txt", stringsAsFactors = FALSE)

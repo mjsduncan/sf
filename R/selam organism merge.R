@@ -105,19 +105,30 @@ sapply(pgsea_data[Homo_sapiens], dim)
 #      h_brain muscle5 muscle3 muscle1 muscle2 muscle4
 # [1,]    8632    8616   12494   12494    9648    9648
 # [2,]      30      12      15      15      15      15
+sum(sapply(pgsea_data[Homo_sapiens], function(x) dim(x)[2]))
+# [1] 102
+
 sapply(pgsea_data[Mus_musculus], dim)
 #      m_brain cochlea hemato_stem  lung m_heart muscle kidney1 kidney2 myo_progen liver m_hippo
 # [1,]   13016   13016       13016 13016    8622     98    5106    3299       8724  8724    8724
 # [2,]       6       6           8    15      12     10      10      10          4     7      23
+sum(sapply(pgsea_data[Mus_musculus], function(x) dim(x)[2]))
+# [1] 111
+
 sapply(pgsea_data[Rattus_norvegicus], dim)
 #      stromal spinal_cord r_hippo laryngeal_ms skeletal_ms r_heart CA1_hipp2 oculomotor extraoc_ms
 # [1,]   10000       10000   10000         4750        4750    4750      4750      10000       4750
 # [2,]       3           9      78            9          12      11        29          9         12
+sum(sapply(pgsea_data[Rattus_norvegicus], function(x) dim(x)[2]))
+# [1] 172
 
 sapply(ls(pattern = "Pgs_"), function(x) dim(get(x)))
 #      Pgs_homo Pgs_homoBack  ... Pgs_mouse Pgs_mouseBack ... Pgs_rat Pgs_ratBack ...
 # [1,]    17985         8561  ...     13558          8421 ...   10263        4489 ...
 # [2,]      102          102  ...       111           111 ...     172         172 ...
+
+
+
 
 sapply(ls(pattern = "Back_normalized"), function(x) summary(colMeans(get(x))))
 #         Pgs_homoBack_normalized Pgs_mouseBack_normalized Pgs_ratBack_normalized
