@@ -38,7 +38,7 @@ qq_plot <- function(Qvals, num.studies, title = "QQ Plot") {
   #quantiles of the chisq distribution
   chisqq <- qchisq(seq(0, .9999, .001), df = num.studies - 1)
   tmp<-quantile(Qvals, seq(0, .9999, .001), na.rm = TRUE)
-  qqplot(chisqq, tmp, ylab = "Quantiles of Sample Q values",pch = "*",
+  qqplot(chisqq, tmp, ylab = "Cochran's Q values for samples",pch = "*",
          xlab = "Quantiles of Chi square", main = title, width = 500, height = 500)
   lines(chisqq, chisqq, lty = "dotted", col = "red")
 }
