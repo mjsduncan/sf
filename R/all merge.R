@@ -30,3 +30,19 @@ sapply(homoEsets, dim)
 # Features       11298      11298        6638       6638         6638    6638      6638
 # Samples            9          9          12         12            9      11        29
 
+for(n in names(homoEsets)) {
+  HOMOesets[[n]] <- homoEsets[[n]]
+}
+
+for(n in names(homoEsets)) {
+  featureMap[na.omit(match(featureNames(homoEsets[[n]]), featureMap$SYMBOL)), 2]
+}
+
+### rename & merge organism moses sets
+allMoses <- lapply(orgMoses[2:3], function(x) x[, colnames(x) %in% featureMap$SYMBOL])
+for(n in names(allMoses)) colnames(allMoses[[n]]) <- featureMap[match(colnames(allMoses[[n]]), featureMap$SYMBOL), 2]
+allMoses <- mapply(function(x, y) cbind(x[, 1], y), orgMoses[2:3], allMoses)
+allMoses[['Homo sapiens']] <- orgMoses[[1]]
+for(i in 1:3) colnames(allMoses[[i]])[1] <- "age"
+allMoses <- lapply(allMoses, function(x) x[, Reduce(intersect, lapply(allMoses, colnames))])
+allMoses <- Reduce(rbind, allMoses)

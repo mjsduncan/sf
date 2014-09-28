@@ -210,3 +210,144 @@ chipGeneInt
 # CAPRIN1   2.129494  2.138534  3.017949 0.0012724576   0
 
 mapply(function(x, y) unique(x[x$SYMBOL %in% rownames(y),]), chipMlist, chipGeneInt, SIMPLIFY = FALSE)
+
+# write files for eddie
+mouse_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/mouse_NoHiLo.csv", stringsAsFactors=FALSE)
+mouse_homo$Hsym <- homoMap$mouseSYM[match(mouse_homo$feature, homoMap$mouseSYM)]
+write.csv(mouse_homo, file = "mouse_homologyAll.csv", row.names = FALSE)
+write.csv(na.omit(mouse_homo), file = "mouse_homology.csv", row.names = FALSE)
+rat_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/rat_NoHiLo.csv", stringsAsFactors=FALSE)
+rat_homo$Hsym <- homoMap$ratSYM[match(rat_homo$feature, homoMap$ratSYM)]
+write.csv(rat_homo, file = "rat_homologyAll.csv", row.names = FALSE)
+write.csv(na.omit(rat_homo), file = "rat_homology.csv", row.names = FALSE)
+
+# function to strip first n characters from character vector strings
+strip <- function(char, n = 1) substr(char,n + 1, max(sapply(char, nchar)))
+
+gpl81_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/gpl81_NoHiLo.csv", stringsAsFactors=FALSE)
+gpl85_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/gpl85_NoHiLo.csv", stringsAsFactors=FALSE)
+gpl96_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/gpl96_NoHiLo.csv", stringsAsFactors=FALSE)
+gpl97_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/gpl97_NoHiLo.csv", stringsAsFactors=FALSE)
+gpl341b_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/gpl341b_NoHiLo.csv", stringsAsFactors=FALSE)
+gpl1261_homo <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/gpl1261_NoHiLo.csv", stringsAsFactors=FALSE)
+
+chipList <- lapply(as.list(ls(pattern = "gpl")), get)
+names(chipList) <- ls(pattern = "gpl")
+for(i in c(1:3, 5:6)) chipList[[i]]$feature <- strip(chipList[[i]]$feature)
+db <- c("mouse430a2.db", "rae230a.db", "mgu74av2.db", "rgu34a.db", "hgu133a.db", "hgu133b.db")
+for(i in 1:6) {
+  require(db[i], character.only = TRUE)
+  annot <- select(get(db[i]), chipList[[i]]$feature, columns = "SYMBOL")
+  chipList[[i]] <- merge(annot, chipList[[i]], by.x = "PROBEID", by.y = "feature", all = TRUE)
+}
+for(i in 1:4) {
+  if(i %% 2 == 0) chipList[[i]]$Hsym <- ratMap$symbol[match(chipList[[i]]$SYMBOL, ratMap$SYMBOL)]
+  if(i %% 2 != 0) chipList[[i]]$Hsym <- mouseMap$symbol[match(chipList[[i]]$SYMBOL, mouseMap$SYMBOL)]
+} 
+# noHiLo didn't work?  clean up lists
+chipList <- lapply(chipList, function(x) x[order(x$Freq, decreasing = TRUE),])
+chipList <- lapply(chipList, na.omit)
+chipList <- lapply(chipList, unique)
+
+# check for HiLos & remove homologs with equal counts, keep highest count if unequal
+> lapply(chipList[1:4], function(x) x[duplicated(x$Hsym) | duplicated(x$Hsym, fromLast = TRUE),])
+$gpl1261_homo
+#       PROBEID  SYMBOL Freq level    Hsym
+# 8  1416029_at   Klf10   13  down   KLF10
+# 28 1416048_at    Phc2    6  down    PHC2
+# 17 1416033_at Tmem109    5    up TMEM109
+# 27 1416048_at    Phc2    2    up    PHC2
+# 9  1416029_at   Klf10    1    up   KLF10
+# 13 1416032_at Tmem109    1    up TMEM109
+# 14 1416032_at Tmem109    1  down TMEM109
+# 20 1416036_at  Fkbp1a    1    up  FKBP1A
+# 21 1416036_at  Fkbp1a    1  down  FKBP1A
+# remove KLF10 up, PHC2 up, TMEM109 down & increase Freq by 1, both FKBP1A
+chipList$gpl1261_homo <- chipList$gpl1261_homo[!(row.names(chipList$gpl1261_homo) %in% c("27", "9", "13", "14", "20", "21")),] 
+chipList$gpl1261_homo["17", 3] <- 6
+
+# $gpl341b_homo
+#         PROBEID       SYMBOL Freq level   Hsym
+# 91 1370487_a_at        Kalrn   10    up  KALRN
+# 43   1367850_at       Fcgr2a    5    up FCGR2A
+# 44   1367850_at    LOC498276    5    up FCGR2A
+# 46   1367850_at LOC100912061    5    up FCGR2A
+# 47   1367850_at LOC100912098    5    up FCGR2A
+# 37 1367830_a_at         Tp53    3    up   TP53
+# 38   1367831_at         Tp53    3    up   TP53
+# 27   1367806_at          Gls    2  down    GLS
+# 2    1367562_at        Sparc    1    up  SPARC
+# 3    1367563_at        Sparc    1    up  SPARC
+# 26   1367805_at          Gls    1  down    GLS
+# 36 1367830_a_at         Tp53    1  down   TP53
+# 40   1367835_at       Pcsk1n    1  down PCSK1N
+# 41   1367835_at LOC100911286    1  down PCSK1N
+# 92 1370487_a_at        Kalrn    1  down  KALRN
+# remove Kalrn down, rm dup FCGR2A, rm TP53 hilo probe, merge GLS, merge SPARC, rm dup PCSK1N 
+chipList$gpl341b_homo <- chipList$gpl341b_homo[!(row.names(chipList$gpl341b_homo) %in% c("92", "44", "46", "47", "36", "37", "26", "3", "41")),] 
+chipList$gpl341b_homo["27", 3] <- 3
+chipList$gpl341b_homo["2", 3] <- 2
+
+# $gpl81_homo
+#        PROBEID     SYMBOL Freq level    Hsym
+# 59   103878_at      Ap3b1   34  down   AP3B1
+# 54 103874_r_at    Ankrd42   13  down ANKRD42
+# 56 103874_r_at    Ccdc90b   13  down CCDC90B
+# 62   103881_at       Ppa2   10    up    PPA2
+# 28 100557_g_at      Eif4b    7    up   EIF4B
+# 14   100536_at       Mobp    4  down    MOBP
+# 63   103881_at       Ppa2    4  down    PPA2
+# 8    100497_at       Stx3    2  down    STX3
+# 19   100539_at      Acot7    2  down   ACOT7
+# 29   100561_at     Iqgap1    2    up  IQGAP1
+# 51 103873_i_at    Ankrd42    2    up ANKRD42
+# 52 103873_i_at    Ccdc90b    2    up CCDC90B
+# 7    100497_at       Stx3    1    up    STX3
+# 15   100536_at       Mobp    1    up    MOBP
+# 18   100539_at      Acot7    1    up   ACOT7
+# 27   100556_at      Eif4b    1  down   EIF4B
+# 30   100561_at     Iqgap1    1  down  IQGAP1
+# 53 103874_r_at    Ankrd42    1    up ANKRD42
+# 55 103874_r_at    Ccdc90b    1    up CCDC90B
+# 57   103875_at       Ngrn    1    up    NGRN
+# 58   103875_at       Ngrn    1  down    NGRN
+# 60   103878_at      Ap3b1    1    up   AP3B1
+# 73 161663_f_at    Dnajc19    1  down DNAJC19
+# 74 161663_f_at Dnajc19-ps    1  down DNAJC19
+# remove AP3B1 up, rm ANKRD42 upx2, CCDC90Bx2, PPA2 down, EIF4B down, MOBP up, STX3 up, ACOT7 up, IQGAP1 down, NGRN updown, merge DNAJC19
+chipList$gpl81_homo <- chipList$gpl81_homo[!(row.names(chipList$gpl81_homo) %in% c("60", "51", "53", "52", "55", "63", "27", "15", "7", "18", "30", "57", "58", "74")),] 
+chipList$gpl81_homo["73", 3] <- 2
+
+# $gpl85_homo
+#             PROBEID       SYMBOL Freq level   Hsym
+# 9       AF032666_at        Exoc2    6    up  EXOC2
+# 52   rc_AA875035_at       Slc4a1    4  down SLC4A1
+# 67 rc_AA875099_s_at       Npap60    4    up  NUP50
+# 10    AF032666_g_at        Exoc2    3  down  EXOC2
+# 51   rc_AA875035_at       Slc4a1    3    up SLC4A1
+# 58   rc_AA875054_at         Tcp1    2    up   TCP1
+# 54   rc_AA875047_at        Cct6a    1  down  CCT6A
+# 55   rc_AA875047_at        Cct6a    1    up  CCT6A
+# 59   rc_AA875054_at         Tcp1    1  down   TCP1
+# 68 rc_AA875099_s_at       Npap60    1  down  NUP50
+# 87        U92289_at       Ptgdrl    1  down  PTGDR
+# 88        U92289_at        Ptgdr    1  down  PTGDR
+# 89        U93092_at        Hoxa1    1  down  HOXA1
+# 90        U93092_at LOC100911406    1  down  HOXA1
+# remove EXOC2 down, SLC4A1 up, TCP1 down, NUP50 down, CCT6A downup, dup HOXA1, dup PTGDR
+chipList$gpl85_homo <- chipList$gpl85_homo[!(row.names(chipList$gpl85_homo) %in% c("10", "51", "59", "68", "54", "55", "87", 90)),] 
+
+
+lapply(chipList, function(x) write.csv(na.omit(x), file = paste(names(eval(sys.call(1)[[2]]))[substitute(x)[[3]]], "logy.csv", sep = ""), row.names = FALSE))
+
+## useful function to remove all packages
+detachAllPackages <- function() {
+  basic.packages <- 
+    c("package:stats","package:graphics","package:grDevices","package:utils","package:datasets","package:methods","package:base")
+  package.list <- search()[ifelse(unlist(gregexpr("package:",search()))==1,TRUE,FALSE)]
+  package.list <- setdiff(package.list,basic.packages)
+  if (length(package.list)>0)  for (package in package.list) detach(package, character.only=TRUE)
+}
+
+# function to strip first n characters from character vector strings
+strip <- function(char, n = 1) substr(char,n + 1, max(sapply(char, nchar)))

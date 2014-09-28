@@ -211,3 +211,73 @@ homoDf <- function(df) {
 
 probe2homo <- lapply(probe2gene[7:26], homoDf)
 save(probe2homo, file = "probe2homo.rdata")
+
+### annotationTools vignette example
+library(annotationTools)
+library("org.Hs.eg.db")
+library("org.Mm.eg.db")
+library("org.Rn.eg.db")
+homologene <- read.delim("ftp://ftp.ncbi.nih.gov/pub/HomoloGene/current/homologene.data", header=F)
+homoMap <- select(org.Hs.eg.db, keys(org.Hs.eg.db, keytype = "SYMBOL"), columns = c("GENENAME", "ENTREZID"), keytype = "SYMBOL")
+names(homologene) <- c("HID", "taxID", "egID", "symbol", "prot_gi", "prot_acc")
+# keep mouse, rat, human
+# 10090  Mus musculus
+# 10116  Rattus norvegicus
+# 9606  Homo sapiens
+homoMap$mouseEG <- NA
+for(i in seq_along(homoMap$mouseEG)) homoMap$mouseEG[i] <- unlist(getHOMOLOG(homoMap$ENTREZID[i], 10090, homologene), rec = FALSE)
+homoMap$mouseEG <- as.character(homoMap$mouseEG)
+mouseSYM <- select(org.Mm.eg.db, homoMap$mouseEG, columns = "SYMBOL", keytype = "ENTREZID")
+homoMap$mouseSYM <- mouseSYM[match(homoMap$mouseEG, mouseSYM$ENTREZID), 2]
+
+homoMap$ratEG <- NA
+for(i in seq_along(homoMap$ratEG)) homoMap$ratEG[i] <- try(unlist(getHOMOLOG(homoMap$ENTREZID[i], 10116, homologene), rec = FALSE))
+# stopped at human symbol index 10500, restarted.
+for(i in 10500:length(homoMap$ratEG)) homoMap$ratEG[i] <- try(unlist(getHOMOLOG(homoMap$ENTREZID[i], 10116, homologene), rec = FALSE))
+homoMap$ratEG <- as.character(homoMap$ratEG)
+# this genrates an error:
+#  Error in sqliteExecStatement(con, statement, bind.data) : 
+#   RS-DBI driver: (error in statement: near "errors": syntax error) 
+# 11 sqliteExecStatement(con, statement, bind.data) 
+# 10 sqliteQuickSQL(conn, statement, ...) 
+# 9 dbGetQuery(conn, SQL) 
+# 8 dbGetQuery(conn, SQL) 
+# 7 dbQuery(dbConn(x), sql) 
+# 6 .extractData(x, cols = cols, keytype = keytype, keys = keys) 
+# 5 .legacySelect(x, keys, cols, keytype, jointype) 
+# 4 .select(x, keys, columns, keytype, jointype = jointype) 
+# 3 .selectWarnJT(x, keys, columns, keytype, jointype = jointype, 
+#     kt = kt, ...) 
+# 2 select(org.Rn.eg.db, homoMap$ratEG, columns = "SYMBOL", keytype = "ENTREZID") 
+# 1 select(org.Rn.eg.db, homoMap$ratEG, columns = "SYMBOL", keytype = "ENTREZID") 
+# error messages mistakenly appended to string sent to mysql server apparently generated error.  rebooting fixed problem
+
+ratSYM <- select(org.Rn.eg.db, homoMap$ratEG, columns = "SYMBOL", keytype = "ENTREZID")
+homoMap$ratSYM <- ratSYM[match(homoMap$ratEG, ratSYM$ENTREZID), 2]
+
+# alternate transform vector of human EGids then match to homoMap
+# partial attempt didn't match above!
+# 107 in below not in equivalent part above, 2 vice versa.
+# TODO: followup
+# ratEGpart <- getHOMOLOG(homoMap$ENTREZID[10500:length(homoMap$ENTREZID)], 10116, homologene)
+# ratEGpart2many <- ratEGpart[sapply(ratEGpart, length) > 1]
+# <- read.csv("C:/Users/user/Desktop/biomind/artificial biologist/stevia/org data/mouse.csv", stringsAsFactors=FALSE)
+# mouse$eg <- unlist(mget(mouse$feature, org.Mm.egSYMBOL2EG, ifnotfound= list(NA)), rec = FALSE)
+# mouse$homoEG <- getHOMOLOG(mouse$eg,10090,homologene)
+
+# salvage using probe2homo homology map for data sets
+load("~/GitHub/stevia/data/probe2homo.rdata")
+arrays <- read.delim("C:/Users/user/Desktop/biomind/artificial biologist/stevia/arrays.tab", stringsAsFactors=FALSE)
+ratData <- arrays$row.names[arrays$organism == "Rattus norvegicus"]
+ratMap <- unique(Reduce(rbind, probe2homo[ratData]))
+# remove rows without homology
+ratMap <- subset(ratMap, !is.na(egID))
+homoMap$ratSYM <- ratMap[match(homoMap$ratEG, ratMap$ENTREZID), 3]
+
+# make mouse map & use rodent maps to get homolog symbols for chip gene lists
+mouseData <- arrays$row.names[arrays$organism == "Mus musculus"]
+mouseMap <- unique(Reduce(rbind, probe2homo[mouseData]))
+mouseMap <- subset(mouseMap, !is.na(egID))
+
+save(homoMap, mouseMap, ratMap, file = "~/GitHub/stevia/data/homoMaps.rdata")
+
